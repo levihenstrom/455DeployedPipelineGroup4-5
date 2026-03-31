@@ -1,4 +1,4 @@
--- Core schema for Supabase/Postgres adapted from shop.db
+-- Core schema for Supabase/Postgres
 
 create table if not exists customers (
   customer_id bigint primary key,
