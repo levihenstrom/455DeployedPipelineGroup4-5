@@ -1,6 +1,0 @@
-{
-  "version": 3,
-  "sources": [],
-  "sections": [
-    {"offset": {"line": 1, "column": 0}, "map": {"version":3,"sources":["file:///Users/levihenstrom/Desktop/BYU/IS%20Core/Winter%202025/IS%20455%20-%20Machine%20Learning/455DeployedPipelineGroup4-5/web/src/app/globals.css"],"sourcesContent":["* {\n  box-sizing: border-box;\n}\n\nhtml,\nbody {\n  margin: 0;\n  padding: 0;\n  font-family: Inter, Arial, sans-serif;\n  background: #f8fafc;\n  color: #0f172a;\n}\n\nmain {\n  max-width: 1100px;\n  margin: 0 auto;\n  padding: 24px;\n}\n\n.grid {\n  display: grid;\n  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));\n  gap: 12px;\n}\n\n.card {\n  background: #ffffff;\n  border: 1px solid #e2e8f0;\n  border-radius: 10px;\n  padding: 16px;\n}\n\n.label {\n  font-size: 12px;\n  color: #475569;\n  margin-bottom: 8px;\n}\n\n.value {\n  font-size: 24px;\n  font-weight: 700;\n}\n\nform {\n  display: grid;\n  gap: 10px;\n}\n\ninput,\nselect,\nbutton {\n  padding: 10px;\n  border: 1px solid #cbd5e1;\n  border-radius: 8px;\n}\n\nbutton {\n  background: #1d4ed8;\n  color: #fff;\n  border: none;\n  cursor: pointer;\n}\n\na {\n  color: #1d4ed8;\n}\n"],"names":[],"mappings":"AAAA;;;;AAIA;;;;;;;;AASA;;;;;;AAMA;;;;;;AAMA;;;;;;;AAOA;;;;;;AAMA;;;;;AAKA;;;;;AAKA;;;;;;AAQA;;;;;;;AAOA"}}]
-}
