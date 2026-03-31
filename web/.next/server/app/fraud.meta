@@ -1,5 +1,15 @@
 {
   "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
     "x-next-cache-tags": "_N_T_/layout,_N_T_/fraud/layout,_N_T_/fraud/page,_N_T_/fraud"
-  }
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/fraud/__PAGE__",
+    "/fraud",
+    "/_index",
+    "/_head"
+  ]
 }
