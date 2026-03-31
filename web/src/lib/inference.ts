@@ -15,7 +15,7 @@ function normalizeInput(data: Record<string, unknown>): Record<string, unknown> 
 
 export function runPrediction(task: "fraud" | "delivery", payload: Record<string, unknown>) {
   const pythonBin = process.env.PYTHON_BIN || "python3";
-  const scriptPath = join(process.cwd(), "..", "ml", "src", "predict.py");
+  const scriptPath = join(/* turbopackIgnore: true */ process.cwd(), "..", "ml", "src", "predict.py");
   const normalized = normalizeInput(payload);
 
   return new Promise<Record<string, unknown>>((resolve, reject) => {

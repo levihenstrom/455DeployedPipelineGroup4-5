@@ -1,5 +1,0 @@
-1:"$Sreact.fragment"
-2:I[54537,["/_next/static/chunks/12f4kapl-xv5s.js","/_next/static/chunks/0qcswr_2v-pjp.js"],"OutletBoundary"]
-3:"$Sreact.suspense"
-0:{"rsc":["$","$1","c",{"children":[["$","section",null,{"className":"grid","children":[["$","div",null,{"className":"card","children":[["$","div",null,{"className":"label","children":"Total Orders"}],["$","div",null,{"className":"value","children":5000}]]}],["$","div",null,{"className":"card","children":[["$","div",null,{"className":"label","children":"Fraud Rate"}],["$","div",null,{"className":"value","children":"6.36%"}]]}],["$","div",null,{"className":"card","children":[["$","div",null,{"className":"label","children":"Late Delivery Rate"}],["$","div",null,{"className":"value","children":"59.60%"}]]}],["$","div",null,{"className":"card","children":[["$","div",null,{"className":"label","children":"Status"}],["$","div",null,{"className":"value","style":{"fontSize":16},"children":"Demo-ready baseline app"}]]}]]}],null,["$","$L2",null,{"children":["$","$3",null,{"name":"Next.MetadataOutlet","children":"$@4"}]}]]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"HJu1wnQAnMkrXETrKhlkf"}
-4:null
