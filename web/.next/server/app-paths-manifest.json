@@ -1,4 +1,9 @@
 {
+  "/_not-found/page": "app/_not-found/page.js",
+  "/delivery/page": "app/delivery/page.js",
   "/api/predict/fraud/route": "app/api/predict/fraud/route.js",
-  "/api/predict/delivery/route": "app/api/predict/delivery/route.js"
+  "/api/predict/delivery/route": "app/api/predict/delivery/route.js",
+  "/insights/page": "app/insights/page.js",
+  "/page": "app/page.js",
+  "/fraud/page": "app/fraud/page.js"
 }
