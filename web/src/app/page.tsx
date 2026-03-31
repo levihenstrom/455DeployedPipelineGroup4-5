@@ -1,6 +1,9 @@
 import { getCsvStats } from "@/lib/dbStats";
 import { getSupabaseConfigStatus, getSupabaseServerClient } from "@/lib/supabase";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function HomePage() {
   // Prefer Supabase KPI view; fall back to locally processed CSV stats.
   const csvStats = getCsvStats();
