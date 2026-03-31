@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
-    "next": "^14.2.33",
+    "next": "^16.2.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
@@ -19,7 +19,7 @@
     "@types/react": "^18.3.23",
     "@types/react-dom": "^18.3.7",
     "eslint": "^8.57.0",
-    "eslint-config-next": "^14.2.33",
+    "eslint-config-next": "^16.2.1",
     "typescript": "^5.9.3"
   }
 }
