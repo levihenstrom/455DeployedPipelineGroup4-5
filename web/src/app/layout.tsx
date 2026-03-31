@@ -13,7 +13,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <main>
           <h1>Class Demo Website + ML</h1>
-          <p>SQLite to Cleaning to ML to Supabase to Vercel</p>
+          <p>Postgres to Cleaning to ML to Supabase to Vercel</p>
           <p>
             <Link href="/">Dashboard</Link> | <Link href="/fraud">Fraud Prediction</Link> |{" "}
             <Link href="/delivery">Delivery Prediction</Link> | <Link href="/insights">Model Insights</Link>

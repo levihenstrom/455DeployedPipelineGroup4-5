@@ -1,23 +1,33 @@
 from __future__ import annotations
 
-import sqlite3
+import os
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from sqlalchemy import create_engine
+from sqlalchemy.engine import Engine
 
 
 ROOT = Path(__file__).resolve().parents[2]
-DB_PATH = ROOT / "shop.db"
+DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
 RAW_DIR = ROOT / "data" / "raw"
 PROCESSED_DIR = ROOT / "data" / "processed"
 
 
-def load_table(conn: sqlite3.Connection, table_name: str) -> pd.DataFrame:
-    return pd.read_sql_query(f"SELECT * FROM {table_name}", conn)
+def get_engine() -> Engine:
+    if not DATABASE_URL:
+        raise ValueError("DATABASE_URL is not set. Configure a Postgres connection string first.")
+    if not DATABASE_URL.startswith("postgresql://"):
+        raise ValueError("DATABASE_URL must be a PostgreSQL URL (postgresql://...).")
+    return create_engine(DATABASE_URL)
 
 
-def export_raw_tables(conn: sqlite3.Connection) -> dict[str, pd.DataFrame]:
+def load_table(engine: Engine, table_name: str) -> pd.DataFrame:
+    return pd.read_sql_query(f"SELECT * FROM {table_name}", engine)
+
+
+def export_raw_tables(engine: Engine) -> dict[str, pd.DataFrame]:
     tables = [
         "customers",
         "products",
@@ -29,7 +39,7 @@ def export_raw_tables(conn: sqlite3.Connection) -> dict[str, pd.DataFrame]:
     dataframes: dict[str, pd.DataFrame] = {}
     RAW_DIR.mkdir(parents=True, exist_ok=True)
     for table in tables:
-        df = load_table(conn, table)
+        df = load_table(engine, table)
         dataframes[table] = df
         df.to_csv(RAW_DIR / f"{table}.csv", index=False)
     return dataframes
@@ -230,13 +240,9 @@ def build_delivery_dataset(dfs: dict[str, pd.DataFrame]) -> pd.DataFrame:
 
 
 def main() -> None:
-    if not DB_PATH.exists():
-        raise FileNotFoundError(f"Database not found: {DB_PATH}")
-
     PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
-
-    with sqlite3.connect(DB_PATH) as conn:
-        dfs = export_raw_tables(conn)
+    engine = get_engine()
+    dfs = export_raw_tables(engine)
 
     fraud_df = build_fraud_dataset(dfs)
     delivery_df = build_delivery_dataset(dfs)
