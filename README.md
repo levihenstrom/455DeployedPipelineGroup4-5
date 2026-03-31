@@ -1,6 +1,6 @@
 # Class Demo Website + ML (Supabase + Vercel)
 
-This project is a class demonstration that turns the existing SQLite database (`shop.db`) into:
+This project is a class demonstration that turns the existing Postgres operational database into:
 
 - a simple web dashboard and prediction app (Next.js + TypeScript)
 - a small ML pipeline (data cleaning + baseline algorithms)
@@ -16,7 +16,7 @@ The focus is clarity and reproducibility, not advanced production engineering.
 
 ## Dataset Summary
 
-Source DB: `shop.db`
+Source DB: Postgres (`DATABASE_URL`)
 
 Main tables:
 - `customers`
@@ -34,7 +34,7 @@ Targets:
 
 - `web/` Next.js app (dashboard + prediction pages + API routes)
 - `ml/` Python scripts for extraction, cleaning, training, and local inference
-- `data/raw/` exported CSV snapshots from SQLite
+- `data/raw/` exported CSV snapshots from Postgres
 - `data/processed/` model-ready datasets
 - `ml/models/` saved model artifacts and preprocessing pipelines
 - `ml/reports/` metrics and model summary outputs
@@ -46,7 +46,7 @@ Targets:
 Script: `ml/src/extract_and_clean.py`
 
 What it does:
-- Reads all core tables from `shop.db`
+- Reads all core tables from Postgres using `DATABASE_URL`
 - Exports snapshots to `data/raw/`
 - Cleans nulls, normalizes booleans/dates, and creates stable model features
 - Produces:
@@ -95,7 +95,7 @@ These routes call Python inference scripts (class demo approach).
 ### Prerequisites
 - Python 3.10+
 - Node.js 18+
-- SQLite CLI (optional but recommended)
+- PostgreSQL (or Supabase Postgres) with schema/data loaded
 
 ### 1) Run ML pipeline
 
@@ -105,6 +105,7 @@ From project root:
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r ml/requirements.txt
+export DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DBNAME"
 python ml/src/extract_and_clean.py
 python ml/src/train_models.py
 ```
