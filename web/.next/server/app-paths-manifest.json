@@ -1,9 +1,10 @@
 {
+  "/_global-error/page": "app/_global-error/page.js",
   "/_not-found/page": "app/_not-found/page.js",
-  "/delivery/page": "app/delivery/page.js",
-  "/api/predict/fraud/route": "app/api/predict/fraud/route.js",
   "/api/predict/delivery/route": "app/api/predict/delivery/route.js",
+  "/api/predict/fraud/route": "app/api/predict/fraud/route.js",
+  "/delivery/page": "app/delivery/page.js",
+  "/fraud/page": "app/fraud/page.js",
   "/insights/page": "app/insights/page.js",
-  "/page": "app/page.js",
-  "/fraud/page": "app/fraud/page.js"
+  "/page": "app/page.js"
 }
