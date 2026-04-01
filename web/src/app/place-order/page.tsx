@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 interface Product {
@@ -18,11 +18,14 @@ interface CartItem {
   quantity: number;
 }
 
-export default function PlaceOrderPage() {
-  const params = useParams();
-  const id = params.id as string;
-  const router = useRouter();
+function getCookie(name: string): string | null {
+  const match = document.cookie.match(new RegExp("(^| )" + name + "=([^;]+)"));
+  return match ? match[2] : null;
+}
 
+export default function PlaceOrderPage() {
+  const router = useRouter();
+  const [customerId, setCustomerId] = useState<string | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [shippingState, setShippingState] = useState("");
@@ -34,6 +37,10 @@ export default function PlaceOrderPage() {
   const [success, setSuccess] = useState<string | null>(null);
 
   useEffect(() => {
+    const id = getCookie("customer_id");
+    if (!id) { router.push("/select-customer"); return; }
+    setCustomerId(id);
+
     fetch("/api/products")
       .then((r) => r.json())
       .then((data) => {
@@ -42,7 +49,7 @@ export default function PlaceOrderPage() {
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, []);
+  }, [router]);
 
   function addToCart(p: Product) {
     setCart((prev) => {
@@ -73,7 +80,7 @@ export default function PlaceOrderPage() {
     setSubmitting(true);
     setError(null);
     try {
-      const res = await fetch(`/api/customers/${id}/orders`, {
+      const res = await fetch(`/api/customers/${customerId}/orders`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -94,17 +101,18 @@ export default function PlaceOrderPage() {
     }
   }
 
+  if (!customerId) return null;
+
   return (
     <section>
-      <p><Link href={`/customers/${id}`}>&larr; Back to dashboard</Link></p>
       <h2>Place Order</h2>
 
       {success && (
         <div className="alert alert-success">
           <p style={{ margin: 0, fontWeight: 600 }}>{success}</p>
           <p style={{ margin: "6px 0 0" }}>
-            <Link href={`/customers/${id}/orders`}>View order history</Link> |{" "}
-            <Link href={`/customers/${id}`}>Back to dashboard</Link>
+            <Link href="/orders">View order history</Link> |{" "}
+            <Link href="/dashboard">Back to dashboard</Link>
           </p>
         </div>
       )}

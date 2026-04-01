@@ -29,6 +29,12 @@ export default function SelectCustomerPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  function selectCustomer(c: Customer) {
+    document.cookie = `customer_id=${c.customer_id}; path=/; max-age=${60 * 60 * 24 * 30}`;
+    document.cookie = `customer_name=${encodeURIComponent(c.full_name)}; path=/; max-age=${60 * 60 * 24 * 30}`;
+    router.push("/dashboard");
+  }
+
   const filtered = customers.filter(
     (c) =>
       c.full_name.toLowerCase().includes(search.toLowerCase()) ||
@@ -38,6 +44,9 @@ export default function SelectCustomerPage() {
   return (
     <section>
       <h2>Select Customer</h2>
+      <p style={{ fontSize: 14, color: "#475569", marginBottom: 12 }}>
+        Choose a customer to act as. No signup or login required.
+      </p>
       <input
         type="text"
         placeholder="Search by name or email..."
@@ -54,11 +63,7 @@ export default function SelectCustomerPage() {
             key={c.customer_id}
             className="card"
             style={{ cursor: "pointer" }}
-            onClick={() => {
-              document.cookie = `customer_id=${c.customer_id}; path=/; max-age=${60 * 60 * 24 * 30}`;
-              document.cookie = `customer_name=${encodeURIComponent(c.full_name)}; path=/; max-age=${60 * 60 * 24 * 30}`;
-              router.push(`/customers/${c.customer_id}`);
-            }}
+            onClick={() => selectCustomer(c)}
           >
             <div style={{ fontWeight: 600 }}>{c.full_name}</div>
             <div style={{ fontSize: 13, color: "#475569" }}>
