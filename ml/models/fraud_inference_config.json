@@ -1,0 +1,31 @@
+{
+  "threshold": 0.85,
+  "feature_columns": [
+    "order_total",
+    "order_subtotal",
+    "shipping_fee",
+    "tax_amount",
+    "risk_score",
+    "payment_method",
+    "device_type",
+    "ip_country",
+    "promo_used",
+    "customer_segment",
+    "loyalty_tier",
+    "gender",
+    "state",
+    "shipping_state",
+    "shipping_method",
+    "distance_band",
+    "promised_days",
+    "actual_days",
+    "items_per_order",
+    "unique_products",
+    "avg_item_price",
+    "customer_age",
+    "account_age_days",
+    "shipping_to_subtotal_ratio",
+    "tax_to_subtotal_ratio"
+  ],
+  "best_model": "logistic_regression"
+}

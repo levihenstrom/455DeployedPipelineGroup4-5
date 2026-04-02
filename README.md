@@ -16,7 +16,7 @@ The focus is clarity and reproducibility, not advanced production engineering.
 
 ## Dataset Summary
 
-Source DB: Postgres (`DATABASE_URL`)
+Source DB: Postgres (`DATABASE_URL`) **or** local SQLite `shop.db` in the project root (no env var needed).
 
 Main tables:
 - `customers`
@@ -68,13 +68,36 @@ Outputs:
 - `ml/models/delivery_model.joblib`
 - `ml/models/fraud_preprocessor.joblib`
 - `ml/models/delivery_preprocessor.joblib`
+- `ml/models/fraud_inference_config.json` (fraud threshold + feature column order for `predict.py`)
 - `ml/models/model_metadata.json`
 - `ml/reports/metrics_summary.json`
+
+Fraud features are defined once in `ml/src/fraud_features.py` and reused by `extract_and_clean.py`, `shop.ipynb`, and `score_orders.py` so the notebook, batch job, and web form stay aligned.
 
 ### 3) Local Prediction Helper
 Script: `ml/src/predict.py`
 
-Provides simple local CLI prediction for either fraud or delivery examples.
+Provides simple local CLI prediction for either fraud or delivery examples. For fraud, it reads `fraud_inference_config.json` when present (threshold + column order); override threshold with env `FRAUD_THRESHOLD` if needed.
+
+### 4) Nightly fraud scoring (batch write to Postgres)
+Script: `ml/src/score_orders.py`
+
+Loads `fraud_model.joblib` / `fraud_preprocessor.joblib`, scores every order, and updates:
+
+- `orders.fraud_probability`
+- `orders.fraud_predicted`
+- `orders.fraud_scored_at`
+
+Run once on your database (Supabase SQL editor):
+
+- `sql/alter_orders_fraud_scores.sql`
+
+New installs using `sql/schema.sql` already include these columns.
+
+### 5) GitHub Actions (schedule) + Vercel (app)
+
+- **Nightly scoring** is implemented as `.github/workflows/nightly-fraud-scoring.yml` (6:00 UTC). Add a repository secret `DATABASE_URL` with your Supabase Postgres URI. The workflow needs the trained artifacts under `ml/models/` committed to the repo (or extend the workflow to train before scoring).
+- **Vercel** hosts the Next.js app only; Python batch scoring runs on GitHub Actions (or another worker), not on Vercel serverless by default.
 
 ## Web App (Next.js)
 
@@ -105,7 +128,8 @@ From project root:
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r ml/requirements.txt
-export DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DBNAME"
+# Local SQLite (default): ensure shop.db is in the project root — no DATABASE_URL needed.
+# Supabase/Postgres: export DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DBNAME"
 python ml/src/extract_and_clean.py
 python ml/src/train_models.py
 ```
@@ -134,6 +158,7 @@ python ml/src/predict.py --task delivery --json '{"carrier":"UPS","shipping_meth
 2. Run SQL in order:
    - `sql/schema.sql`
    - `sql/views.sql`
+   - If the project was created before fraud scoring columns existed, also run `sql/alter_orders_fraud_scores.sql`.
 3. Exported CSVs already exist at `data/raw/*.csv`. Import them into Supabase tables:
    - `customers` `products` `orders` `order_items` `shipments` `product_reviews`
 4. For class demo, you can keep it simple:

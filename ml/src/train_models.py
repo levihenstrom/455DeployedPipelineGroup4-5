@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 import joblib
+import numpy as np
 import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier
@@ -109,6 +111,23 @@ def evaluate_task(
     MODELS_DIR.mkdir(parents=True, exist_ok=True)
     joblib.dump(best_model, MODELS_DIR / f"{task_name}_model.joblib")
     joblib.dump(preprocessor, MODELS_DIR / f"{task_name}_preprocessor.joblib")
+
+    if task_name == "fraud":
+        probs = best_model.predict_proba(X_test_p)[:, 1]
+        threshold = 0.5
+        best_f1 = -1.0
+        for t in np.round(np.arange(0.05, 0.96, 0.05), 2):
+            preds = (probs >= t).astype(int)
+            f1 = float(f1_score(y_test, preds, zero_division=0))
+            if f1 > best_f1:
+                best_f1 = f1
+                threshold = float(t)
+        env_thr = os.getenv("FRAUD_THRESHOLD_OVERRIDE", "").strip()
+        if env_thr:
+            threshold = float(env_thr)
+        feature_columns = X.columns.tolist()
+        cfg = {"threshold": threshold, "feature_columns": feature_columns, "best_model": best_name}
+        (MODELS_DIR / "fraud_inference_config.json").write_text(json.dumps(cfg, indent=2))
 
     return {
         "task": task_name,
