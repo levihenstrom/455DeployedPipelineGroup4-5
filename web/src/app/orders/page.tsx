@@ -8,7 +8,7 @@ interface OrderSummary {
   order_id: number;
   order_datetime: string;
   order_total: number;
-  is_fraud: boolean;
+  is_fraud: boolean | null;
   late_delivery: boolean | null;
 }
 
@@ -64,7 +64,9 @@ export default function OrdersPage() {
                 <td style={{ padding: 8 }}>{o.order_id}</td>
                 <td style={{ padding: 8 }}>{new Date(o.order_datetime).toLocaleDateString()}</td>
                 <td style={{ padding: 8 }}>${o.order_total.toFixed(2)}</td>
-                <td style={{ padding: 8 }}>{o.is_fraud ? "Yes" : "No"}</td>
+                <td style={{ padding: 8 }}>
+                  {o.is_fraud === null ? "Pending review" : o.is_fraud ? "Yes" : "No"}
+                </td>
                 <td style={{ padding: 8 }}>{o.late_delivery == null ? "N/A" : o.late_delivery ? "Yes" : "No"}</td>
                 <td style={{ padding: 8 }}>
                   <Link href={`/orders/${o.order_id}`}>Details</Link>
