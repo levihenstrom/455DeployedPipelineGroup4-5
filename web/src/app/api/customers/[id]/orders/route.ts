@@ -9,6 +9,11 @@ import {
   type CustomerRow,
 } from "@/lib/fraudPayload";
 
+function serializeIsFraud(v: unknown): boolean | null {
+  if (v === null || v === undefined) return null;
+  return Boolean(v);
+}
+
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -43,7 +48,7 @@ export async function GET(
 
         const result = orders.map((o) => ({
           ...o,
-          is_fraud: Boolean(o.is_fraud),
+          is_fraud: serializeIsFraud(o.is_fraud),
           late_delivery: o.late_delivery == null ? null : Boolean(o.late_delivery),
           items: (itemStmt.all(o.order_id) as any[]).map((i) => ({
             product_name: i.product_name ?? "Unknown",
@@ -69,7 +74,7 @@ export async function GET(
 
       const result = rows.map((o) => ({
         ...o,
-        is_fraud: Boolean(o.is_fraud),
+        is_fraud: serializeIsFraud(o.is_fraud),
         late_delivery: o.late_delivery == null ? null : Boolean(o.late_delivery),
       }));
 
@@ -208,6 +213,11 @@ export async function POST(
       } catch {
         /* exists */
       }
+      try {
+        db.exec("ALTER TABLE orders ALTER COLUMN is_fraud DROP NOT NULL");
+      } catch {
+        /* already nullable or unsupported */
+      }
 
       const cust = db
         .prepare(
@@ -274,7 +284,7 @@ export async function POST(
           taxAmount,
           orderTotal,
           riskScore,
-          0
+          null
         );
         const oid = Number(orderResult.lastInsertRowid);
 
@@ -420,7 +430,7 @@ export async function POST(
     tax_amount: taxAmount,
     order_total: orderTotal,
     risk_score: riskScore,
-    is_fraud: false,
+    is_fraud: null,
   });
 
   if (orderErr) {

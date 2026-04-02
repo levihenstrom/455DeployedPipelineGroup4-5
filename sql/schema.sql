@@ -42,7 +42,7 @@ create table if not exists orders (
   tax_amount numeric not null,
   order_total numeric not null,
   risk_score numeric not null,
-  is_fraud boolean not null default false,
+  is_fraud boolean,
   fraud_probability double precision
 );
 

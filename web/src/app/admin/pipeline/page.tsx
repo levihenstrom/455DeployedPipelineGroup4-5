@@ -28,8 +28,8 @@ export default function AdminPipelinePage() {
             stores <code>fraud_probability</code> on the order row.
           </li>
           <li>
-            <strong>Human labels</strong> — admins set <code>is_fraud</code> on the order dashboard (ground
-            truth for review and for retraining).
+            <strong>Human labels</strong> — <code>is_fraud</code> is <strong>NULL</strong> until an admin marks an
+            order Legit or Fraud; that boolean is ground truth for retraining (model score is only a hint).
           </li>
           <li>
             <strong>Retrain (scheduled)</strong> — typically a nightly job (e.g. GitHub Actions or a VM) exports

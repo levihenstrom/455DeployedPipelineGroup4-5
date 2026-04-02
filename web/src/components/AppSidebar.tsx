@@ -94,14 +94,12 @@ export function AppSidebar({
           <>
             <div className="app-nav-section">Operations</div>
             <Link href="/admin/orders">Order dashboard</Link>
+            <Link href="/admin/history">Full order history</Link>
             <Link href="/admin/pipeline">ML pipeline</Link>
             <div className="app-nav-section">Warehouse</div>
             <Link href="/warehouse/priority">Priority queue</Link>
-            <Link href="/scoring">Run scoring</Link>
             <div className="app-nav-section">ML tools</div>
-            <Link href="/fraud">Fraud prediction</Link>
-            <Link href="/delivery">Delivery prediction</Link>
-            <Link href="/insights">Model insights</Link>
+            <Link href="/admin/notebook">Notebook summary</Link>
           </>
         )}
       </nav>
