@@ -4,32 +4,44 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 
 export const metadata: Metadata = {
-  title: "Class Demo Website + ML",
-  description: "Simple ecommerce analytics and ML demo"
+  title: "Shop ML Dashboard",
+  description: "E-commerce analytics and ML pipeline"
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const cookieStore = await cookies();
-  const customerId = cookieStore.get("customer_id")?.value ?? null;
+  const customerId   = cookieStore.get("customer_id")?.value   ?? null;
   const customerName = cookieStore.get("customer_name")?.value ?? null;
 
   return (
     <html lang="en">
       <body>
         <main>
-          <div className="site-header">
-            <h1>Class Demo Website + ML</h1>
-            <p className="subtitle">Postgres &rarr; Cleaning &rarr; ML &rarr; Supabase &rarr; Vercel</p>
+
+          {/* ── Hero banner ── */}
+          <div className="hero">
+            <h1>Shop ML Dashboard</h1>
+            <p>End-to-end machine learning pipeline — fraud detection & late delivery prediction</p>
+            <div className="hero-pills">
+              <span className="hero-pill">Postgres → Supabase</span>
+              <span className="hero-pill">scikit-learn</span>
+              <span className="hero-pill">Next.js → Vercel</span>
+              <span className="hero-pill">CRISP-DM</span>
+            </div>
           </div>
 
+          {/* ── Customer banner ── */}
           {customerId && customerName && (
             <div className="customer-banner">
               <span>Acting as: <strong>{decodeURIComponent(customerName)}</strong></span>
-              <Link href="/select-customer" style={{ fontSize: 13 }}>Change Customer</Link>
+              <Link href="/select-customer" style={{ fontSize: 13 }}>Change →</Link>
             </div>
           )}
 
-          <nav className="nav-bar">
+          {/* ── Navigation ── */}
+          <nav className="nav-wrapper">
+            <Link href="/" className="nav-btn secondary">Home</Link>
+
             <Link href="/select-customer" className="nav-btn">Select Customer</Link>
 
             <div className="nav-dropdown">
@@ -50,15 +62,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             </div>
 
             <div className="nav-dropdown">
-              <button type="button" className="nav-dropdown-trigger secondary">ML Tools</button>
+              <button type="button" className="nav-dropdown-trigger">ML Tools</button>
               <div className="nav-dropdown-menu">
                 <Link href="/fraud">Fraud Prediction</Link>
                 <Link href="/delivery">Delivery Prediction</Link>
                 <Link href="/insights">Model Insights</Link>
               </div>
             </div>
-
-            <Link href="/" className="nav-btn secondary">Home</Link>
           </nav>
 
           {children}
