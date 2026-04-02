@@ -13,7 +13,7 @@ export async function GET(
       const db = getSqliteDb();
       const row = db
         .prepare(
-          `SELECT customer_id, full_name, email, gender, customer_segment, loyalty_tier, city, state
+          `SELECT customer_id, full_name, email, gender, customer_segment, loyalty_tier, city, state, zip_code
            FROM customers
            WHERE customer_id = ?`
         )
@@ -29,7 +29,7 @@ export async function GET(
 
   const { data, error } = await supabase
     .from("customers")
-    .select("customer_id, full_name, email, gender, customer_segment, loyalty_tier, city, state")
+    .select("customer_id, full_name, email, gender, customer_segment, loyalty_tier, city, state, zip_code")
     .eq("customer_id", id)
     .single();
 

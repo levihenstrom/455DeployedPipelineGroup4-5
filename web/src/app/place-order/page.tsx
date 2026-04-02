@@ -29,8 +29,13 @@ export default function PlaceOrderPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [shippingState, setShippingState] = useState("");
+  const [billingZip, setBillingZip] = useState("");
+  const [shippingZip, setShippingZip] = useState("");
+  const [sameZipAsBilling, setSameZipAsBilling] = useState(true);
   const [paymentMethod, setPaymentMethod] = useState("card");
   const [shippingMethod, setShippingMethod] = useState("standard");
+  const [promoUsed, setPromoUsed] = useState(false);
+  const [promoCode, setPromoCode] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,11 +46,21 @@ export default function PlaceOrderPage() {
     if (!id) { router.push("/select-customer"); return; }
     setCustomerId(id);
 
-    fetch("/api/products")
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.error) setError(data.error);
-        else setProducts(data);
+    Promise.all([
+      fetch("/api/products").then((r) => r.json()),
+      fetch(`/api/customers/${id}`).then((r) => r.json()),
+    ])
+      .then(([prodData, custData]) => {
+        if (prodData.error) setError(prodData.error);
+        else setProducts(prodData);
+        if (custData && !custData.error && custData.zip_code) {
+          const z = String(custData.zip_code);
+          setBillingZip(z);
+          setShippingZip(z);
+        }
+        if (custData && !custData.error && custData.state) {
+          setShippingState(String(custData.state));
+        }
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
@@ -76,6 +91,9 @@ export default function PlaceOrderPage() {
     e.preventDefault();
     if (cart.length === 0) { setError("Add at least one item."); return; }
     if (!shippingState) { setError("Enter shipping state."); return; }
+    if (!billingZip.trim()) { setError("Enter billing ZIP."); return; }
+    const shipZ = sameZipAsBilling ? billingZip.trim() : shippingZip.trim();
+    if (!shipZ) { setError("Enter shipping ZIP or use same as billing."); return; }
 
     setSubmitting(true);
     setError(null);
@@ -88,11 +106,19 @@ export default function PlaceOrderPage() {
           shipping_state: shippingState,
           payment_method: paymentMethod,
           shipping_method: shippingMethod,
+          billing_zip: billingZip.trim(),
+          shipping_zip: shipZ,
+          promo_used: promoUsed,
+          promo_code: promoUsed && promoCode.trim() ? promoCode.trim() : null,
         }),
       });
       const data = await res.json();
       if (data.error) { setError(data.error); return; }
-      setSuccess(`Order #${data.order_id} placed successfully!`);
+      const fraudLine =
+        data.fraud_probability != null
+          ? ` Model fraud probability: ${(Number(data.fraud_probability) * 100).toFixed(1)}%.`
+          : "";
+      setSuccess(`Order #${data.order_id} placed successfully!${fraudLine}`);
       setCart([]);
     } catch (e: any) {
       setError(e.message);
@@ -202,25 +228,66 @@ export default function PlaceOrderPage() {
             <form onSubmit={handleSubmit} className="card">
               <h3 style={{ margin: "0 0 8px", fontSize: 14 }}>Checkout</h3>
 
-              <label>Shipping State</label>
+              <label>Billing ZIP</label>
+              <input
+                value={billingZip}
+                onChange={(e) => {
+                  setBillingZip(e.target.value);
+                  if (sameZipAsBilling) setShippingZip(e.target.value);
+                }}
+                placeholder="e.g. 28289"
+                required
+              />
+
+              <label style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 500 }}>
+                <input
+                  type="checkbox"
+                  checked={sameZipAsBilling}
+                  onChange={(e) => {
+                    setSameZipAsBilling(e.target.checked);
+                    if (e.target.checked) setShippingZip(billingZip);
+                  }}
+                />
+                Shipping ZIP same as billing
+              </label>
+
+              {!sameZipAsBilling && (
+                <>
+                  <label>Shipping ZIP</label>
+                  <input value={shippingZip} onChange={(e) => setShippingZip(e.target.value)} placeholder="ZIP" required />
+                </>
+              )}
+
+              <label>Shipping state</label>
               <input value={shippingState} onChange={(e) => setShippingState(e.target.value)} placeholder="e.g. UT" required />
 
-              <label>Payment Method</label>
+              <label>Payment method</label>
               <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
                 <option value="card">Card</option>
                 <option value="paypal">PayPal</option>
                 <option value="bank">Bank Transfer</option>
               </select>
 
-              <label>Shipping Method</label>
+              <label>Shipping method</label>
               <select value={shippingMethod} onChange={(e) => setShippingMethod(e.target.value)}>
                 <option value="standard">Standard ($5.99)</option>
                 <option value="express">Express ($15.99)</option>
                 <option value="overnight">Overnight ($29.99)</option>
               </select>
 
+              <label style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 500 }}>
+                <input type="checkbox" checked={promoUsed} onChange={(e) => setPromoUsed(e.target.checked)} />
+                Using promo code
+              </label>
+              {promoUsed && (
+                <>
+                  <label>Promo code</label>
+                  <input value={promoCode} onChange={(e) => setPromoCode(e.target.value)} placeholder="SAVE10" />
+                </>
+              )}
+
               <button type="submit" disabled={submitting} style={{ marginTop: 4 }}>
-                {submitting ? "Placing Order..." : "Place Order"}
+                {submitting ? "Placing order…" : "Place order"}
               </button>
             </form>
           )}
