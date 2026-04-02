@@ -10,7 +10,11 @@ export default async function HomePage() {
   const config   = getSupabaseConfigStatus();
   const supabase = getSupabaseServerClient();
 
-  let kpi: { total_orders?: number; fraud_rate_pct?: number; late_delivery_rate_pct?: number } | null = null;
+  let kpi: {
+    total_orders?: number;
+    fraud_rate_pct?: number | null;
+    late_delivery_rate_pct?: number;
+  } | null = null;
   let dbStatus = "Disconnected";
   let dbError: string | null = null;
 
@@ -30,9 +34,15 @@ export default async function HomePage() {
           supabase.from("orders").select("is_fraud"),
           supabase.from("shipments").select("late_delivery"),
         ]);
-        const fraudRate = (fraudRows ?? []).filter((r: any) => r.is_fraud).length / Math.max(1, (fraudRows ?? []).length);
+        const labeled = (fraudRows ?? []).filter((r: { is_fraud: boolean | null }) => r.is_fraud !== null);
+        const fraudRate =
+          labeled.length === 0 ? null : labeled.filter((r: { is_fraud: boolean | null }) => r.is_fraud).length / labeled.length;
         const lateRate  = (lateRows  ?? []).filter((r: any) => r.late_delivery).length / Math.max(1, (lateRows  ?? []).length);
-        kpi = { total_orders: count ?? 0, fraud_rate_pct: fraudRate * 100, late_delivery_rate_pct: lateRate * 100 };
+        kpi = {
+          total_orders: count ?? 0,
+          fraud_rate_pct: fraudRate == null ? null : fraudRate * 100,
+          late_delivery_rate_pct: lateRate * 100,
+        };
         dbStatus = "Connected";
       }
     } catch (err) {
@@ -60,8 +70,9 @@ export default async function HomePage() {
           <div className="value">{totalOrders?.toLocaleString() ?? "N/A"}</div>
         </div>
         <div className="card card-red">
-          <div className="label">Fraud Rate</div>
+          <div className="label">Fraud rate (labeled orders)</div>
           <div className="value">{fraudRatePct == null ? "N/A" : `${fraudRatePct.toFixed(1)}%`}</div>
+          <p style={{ fontSize: 11, color: "#64748b", margin: "6px 0 0" }}>Excludes orders still pending review.</p>
         </div>
         <div className="card card-orange" style={{ borderLeftColor: "#d97706" }}>
           <div className="label">Late Delivery Rate</div>

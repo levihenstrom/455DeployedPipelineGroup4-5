@@ -12,7 +12,7 @@ interface Order {
   shipping_fee: number;
   tax_amount: number;
   payment_method: string;
-  is_fraud: boolean;
+  is_fraud: boolean | null;
   shipping_method: string | null;
   late_delivery: boolean | null;
   carrier: string | null;
@@ -68,7 +68,15 @@ export default function OrderDetailPage() {
           <strong>Total:</strong> ${order.order_total.toFixed(2)}
         </div>
         <div style={{ marginTop: 8, fontSize: 13 }}>
-          {order.is_fraud && <span style={{ color: "#dc2626", fontWeight: 600, marginRight: 8 }}>Flagged Fraud</span>}
+          {order.is_fraud === null && (
+            <span style={{ color: "#64748b", fontWeight: 600, marginRight: 8 }}>Fraud review pending</span>
+          )}
+          {order.is_fraud === true && (
+            <span style={{ color: "#dc2626", fontWeight: 600, marginRight: 8 }}>Flagged fraud</span>
+          )}
+          {order.is_fraud === false && (
+            <span style={{ color: "#16a34a", fontWeight: 600, marginRight: 8 }}>Not fraud</span>
+          )}
           {order.late_delivery === true && <span style={{ color: "#d97706", fontWeight: 600 }}>Late Delivery</span>}
           {order.late_delivery === false && <span style={{ color: "#16a34a" }}>On Time</span>}
         </div>

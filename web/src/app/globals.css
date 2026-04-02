@@ -11,10 +11,154 @@ html, body {
   line-height: 1.5;
 }
 
-main {
+/* ── App shell (sidebar) ── */
+.app-root {
+  display: flex;
+  min-height: 100vh;
+  align-items: stretch;
+}
+
+.app-sidebar {
+  width: 260px;
+  flex-shrink: 0;
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 20px 0 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  min-height: 100vh;
+}
+
+.app-sidebar-brand {
+  padding: 0 18px 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  margin-bottom: 4px;
+}
+
+.app-sidebar-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #fff;
+  text-decoration: none;
+  display: block;
+}
+
+.app-sidebar-title:hover {
+  color: #93c5fd;
+  text-decoration: none;
+}
+
+.app-sidebar-sub {
+  font-size: 11px;
+  color: #94a3b8;
+  margin: 4px 0 0;
+}
+
+.app-mode-toggle {
+  display: flex;
+  margin: 0 14px;
+  padding: 3px;
+  background: rgba(0,0,0,0.25);
+  border-radius: 10px;
+  gap: 2px;
+}
+
+.app-mode-toggle button {
+  flex: 1;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  background: transparent;
+  color: #94a3b8;
+}
+
+.app-mode-toggle button.active {
+  background: #1d4ed8;
+  color: #fff;
+}
+
+.app-mode-toggle button:not(.active):hover {
+  color: #e2e8f0;
+}
+
+.app-sidebar-banner {
+  margin: 0 14px;
+  padding: 10px 12px;
+  background: rgba(29,78,216,0.2);
+  border-radius: 10px;
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.app-sidebar-banner strong {
+  color: #fff;
+  font-size: 13px;
+}
+
+.app-sidebar-link {
+  font-size: 11px;
+  color: #93c5fd;
+  margin-top: 2px;
+}
+
+.app-sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 10px;
+}
+
+.app-sidebar-nav a {
+  display: block;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #cbd5e1;
+  text-decoration: none;
+  border-radius: 8px;
+}
+
+.app-sidebar-nav a:hover {
+  background: rgba(255,255,255,0.06);
+  color: #fff;
+  text-decoration: none;
+}
+
+.app-nav-section {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #64748b;
+  padding: 10px 12px 4px;
+  margin-top: 6px;
+}
+
+.app-main {
+  flex: 1;
+  min-width: 0;
+  background: #f8fafc;
+}
+
+.app-main-inner {
   max-width: 1200px;
   margin: 0 auto;
   padding: 32px 24px;
+}
+
+main {
+  max-width: none;
+  margin: 0;
+  padding: 0;
 }
 
 h1 { font-size: 24px; font-weight: 700; margin: 0 0 4px; }
@@ -346,3 +490,18 @@ tr:hover td { background: #f8fafc; }
 /* ── Links ── */
 a { color: #1d4ed8; text-decoration: none; }
 a:hover { text-decoration: underline; }
+
+@media (max-width: 900px) {
+  .app-root {
+    flex-direction: column;
+  }
+  .app-sidebar {
+    width: 100%;
+    min-height: 0;
+    position: relative;
+    padding-bottom: 12px;
+  }
+  .app-mode-toggle {
+    max-width: 320px;
+  }
+}

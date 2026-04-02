@@ -1,6 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { getSqliteDb } from "@/lib/sqlite";
+import { runPrediction } from "@/lib/inference";
+import {
+  buildFraudPayload,
+  computeRiskScoreFeature,
+  shipmentDefaultsFromCheckout,
+  type CustomerRow,
+} from "@/lib/fraudPayload";
+
+function serializeIsFraud(v: unknown): boolean | null {
+  if (v === null || v === undefined) return null;
+  return Boolean(v);
+}
 
 export async function GET(
   req: NextRequest,
@@ -36,7 +48,7 @@ export async function GET(
 
         const result = orders.map((o) => ({
           ...o,
-          is_fraud: Boolean(o.is_fraud),
+          is_fraud: serializeIsFraud(o.is_fraud),
           late_delivery: o.late_delivery == null ? null : Boolean(o.late_delivery),
           items: (itemStmt.all(o.order_id) as any[]).map((i) => ({
             product_name: i.product_name ?? "Unknown",
@@ -62,7 +74,7 @@ export async function GET(
 
       const result = rows.map((o) => ({
         ...o,
-        is_fraud: Boolean(o.is_fraud),
+        is_fraud: serializeIsFraud(o.is_fraud),
         late_delivery: o.late_delivery == null ? null : Boolean(o.late_delivery),
       }));
 
@@ -137,38 +149,95 @@ export async function GET(
   return NextResponse.json(result);
 }
 
+type CheckoutBody = {
+  items: { product_id: number; quantity: number }[];
+  shipping_state: string;
+  payment_method: string;
+  shipping_method: string;
+  billing_zip?: string;
+  shipping_zip?: string;
+  promo_used?: boolean;
+  promo_code?: string | null;
+  device_type?: string;
+  ip_country?: string;
+};
+
+async function runFraudForOrder(
+  payload: Record<string, string | number>
+): Promise<{ probability: number; prediction: number } | null> {
+  try {
+    const result = await runPrediction("fraud", payload);
+    return {
+      probability: Number(result.probability),
+      prediction: Number(result.prediction),
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const body = (await req.json()) as CheckoutBody;
+  const {
+    items,
+    shipping_state,
+    payment_method,
+    shipping_method: shipMethodRaw,
+    billing_zip: billingZipIn,
+    shipping_zip: shippingZipIn,
+    promo_used: promoUsedIn,
+    promo_code: promoCodeIn,
+    device_type: deviceTypeIn,
+    ip_country: ipCountryIn,
+  } = body;
+
+  const shipMethod = shipMethodRaw || "standard";
+
+  if (!items || !Array.isArray(items) || items.length === 0) {
+    return NextResponse.json({ error: "Order must have at least one item" }, { status: 400 });
+  }
+  if (!shipping_state || !payment_method) {
+    return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+  }
+
   const supabase = getSupabaseServerClient();
   if (!supabase) {
     try {
       const db = getSqliteDb();
-      const body = await req.json();
-      const { items, shipping_state, payment_method, shipping_method } = body;
-
-      if (!items || !Array.isArray(items) || items.length === 0) {
-        return NextResponse.json({ error: "Order must have at least one item" }, { status: 400 });
+      try {
+        db.exec("ALTER TABLE orders ADD COLUMN fraud_probability REAL");
+      } catch {
+        /* exists */
       }
-      if (!shipping_state || !payment_method) {
-        return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+      try {
+        db.exec("ALTER TABLE orders ALTER COLUMN is_fraud DROP NOT NULL");
+      } catch {
+        /* already nullable or unsupported */
       }
 
-      const productIds = items.map((i: any) => Number(i.product_id));
+      const cust = db
+        .prepare(
+          `SELECT gender, state, customer_segment, loyalty_tier, birthdate, created_at, zip_code
+           FROM customers WHERE customer_id = ?`
+        )
+        .get(Number(id)) as Record<string, string> | undefined;
+      if (!cust) {
+        return NextResponse.json({ error: "Customer not found" }, { status: 404 });
+      }
+
+      const productIds = items.map((i) => Number(i.product_id));
       const placeholders = productIds.map(() => "?").join(",");
       const products = db
-        .prepare(
-          `SELECT product_id, price
-           FROM products
-           WHERE product_id IN (${placeholders})`
-        )
-        .all(...productIds) as any[];
+        .prepare(`SELECT product_id, price FROM products WHERE product_id IN (${placeholders})`)
+        .all(...productIds) as { product_id: number; price: number }[];
       const priceMap = new Map(products.map((p) => [Number(p.product_id), Number(p.price)]));
 
       let subtotal = 0;
-      const lineItems = items.map((i: any) => {
+      const lineItems = items.map((i) => {
         const productId = Number(i.product_id);
         const quantity = Number(i.quantity);
         const price = priceMap.get(productId) ?? 0;
@@ -178,12 +247,20 @@ export async function POST(
       });
       subtotal = Math.round(subtotal * 100) / 100;
 
-      const shippingFee = shipping_method === "express" ? 15.99 : shipping_method === "overnight" ? 29.99 : 5.99;
+      const shippingFee = shipMethod === "express" ? 15.99 : shipMethod === "overnight" ? 29.99 : 5.99;
       const taxAmount = Math.round(subtotal * 0.08 * 100) / 100;
       const orderTotal = Math.round((subtotal + shippingFee + taxAmount) * 100) / 100;
-      const now = new Date().toISOString().slice(0, 19).replace("T", " ");
+      const riskScore = computeRiskScoreFeature(subtotal, orderTotal);
+      const billingZip = billingZipIn?.trim() || cust.zip_code || "00000";
+      const shippingZip = shippingZipIn?.trim() || billingZip;
+      const promoUsed = Boolean(promoUsedIn);
+      const promoCode = promoUsed && promoCodeIn?.trim() ? promoCodeIn.trim() : null;
+      const deviceType = deviceTypeIn?.trim() || "web";
+      const ipCountry = ipCountryIn?.trim() || "US";
+      const shipDef = shipmentDefaultsFromCheckout(shipMethod);
+      const nowIso = new Date().toISOString();
 
-      const transaction = db.transaction(() => {
+      const orderId = db.transaction(() => {
         const orderInsert = db.prepare(
           `INSERT INTO orders (
              customer_id, order_datetime, billing_zip, shipping_zip, shipping_state,
@@ -193,53 +270,108 @@ export async function POST(
         );
         const orderResult = orderInsert.run(
           Number(id),
-          now,
-          "",
-          "",
+          nowIso.replace("T", " ").slice(0, 19),
+          billingZip,
+          shippingZip,
           String(shipping_state),
           String(payment_method),
-          "web",
-          "US",
-          0,
-          null,
+          deviceType,
+          ipCountry,
+          promoUsed ? 1 : 0,
+          promoCode,
           subtotal,
           shippingFee,
           taxAmount,
           orderTotal,
-          0,
-          0
+          riskScore,
+          null
         );
-        const orderId = Number(orderResult.lastInsertRowid);
+        const oid = Number(orderResult.lastInsertRowid);
 
         const itemInsert = db.prepare(
           `INSERT INTO order_items (order_id, product_id, quantity, unit_price, line_total)
            VALUES (?, ?, ?, ?, ?)`
         );
         for (const li of lineItems) {
-          itemInsert.run(orderId, li.product_id, li.quantity, li.unit_price, li.line_total);
+          itemInsert.run(oid, li.product_id, li.quantity, li.unit_price, li.line_total);
         }
-        return orderId;
+
+        const maxShip =
+          (db.prepare("SELECT MAX(shipment_id) as m FROM shipments").get() as { m: number | null })?.m ?? 0;
+        const shipmentId = maxShip + 1;
+        db.prepare(
+          `INSERT INTO shipments (shipment_id, order_id, ship_datetime, carrier, shipping_method, distance_band, promised_days, actual_days, late_delivery)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        ).run(
+          shipmentId,
+          oid,
+          nowIso.replace("T", " ").slice(0, 19),
+          shipDef.carrier,
+          shipDef.shipping_method,
+          shipDef.distance_band,
+          shipDef.promised_days,
+          shipDef.actual_days,
+          0
+        );
+
+        return oid;
+      })();
+
+      const customerRow: CustomerRow = {
+        gender: cust.gender,
+        state: cust.state,
+        customer_segment: cust.customer_segment,
+        loyalty_tier: cust.loyalty_tier,
+        birthdate: cust.birthdate,
+        created_at: cust.created_at,
+      };
+
+      const fraudPayload = buildFraudPayload({
+        order: {
+          order_subtotal: subtotal,
+          shipping_fee: shippingFee,
+          tax_amount: taxAmount,
+          order_total: orderTotal,
+          risk_score: riskScore,
+          payment_method: String(payment_method),
+          device_type: deviceType,
+          ip_country: ipCountry,
+          promo_used: promoUsed,
+          shipping_state: String(shipping_state),
+        },
+        customer: customerRow,
+        shipment: shipDef,
+        lineItems,
+        orderDatetime: nowIso,
       });
 
-      const orderId = transaction();
-      return NextResponse.json({ order_id: orderId, order_total: orderTotal });
+      const fraud = await runFraudForOrder(fraudPayload);
+      if (fraud) {
+        db.prepare("UPDATE orders SET fraud_probability = ? WHERE order_id = ?").run(fraud.probability, orderId);
+      }
+
+      return NextResponse.json({
+        order_id: orderId,
+        order_total: orderTotal,
+        fraud_probability: fraud?.probability ?? null,
+        fraud_prediction: fraud?.prediction ?? null,
+      });
     } catch (error) {
       return NextResponse.json({ error: (error as Error).message }, { status: 500 });
     }
   }
 
-  const body = await req.json();
-  const { items, shipping_state, payment_method, shipping_method } = body;
+  const { data: customer, error: custErr } = await supabase
+    .from("customers")
+    .select("gender, state, customer_segment, loyalty_tier, birthdate, created_at, zip_code")
+    .eq("customer_id", id)
+    .single();
 
-  if (!items || !Array.isArray(items) || items.length === 0) {
-    return NextResponse.json({ error: "Order must have at least one item" }, { status: 400 });
-  }
-  if (!shipping_state || !payment_method) {
-    return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+  if (custErr || !customer) {
+    return NextResponse.json({ error: "Customer not found" }, { status: 404 });
   }
 
-  // Look up product prices
-  const productIds = items.map((i: any) => i.product_id);
+  const productIds = items.map((i) => i.product_id);
   const { data: products, error: prodErr } = await supabase
     .from("products")
     .select("product_id, price")
@@ -249,63 +381,97 @@ export async function POST(
     return NextResponse.json({ error: "Failed to look up products" }, { status: 500 });
   }
 
-  const priceMap = new Map(products.map((p: any) => [p.product_id, Number(p.price)]));
+  const priceMap = new Map(products.map((p: { product_id: number; price: number }) => [p.product_id, Number(p.price)]));
 
-  // Calculate totals
   let subtotal = 0;
-  const lineItems = items.map((i: any) => {
+  const lineItems = items.map((i) => {
     const price = priceMap.get(i.product_id) ?? 0;
     const lineTotal = price * i.quantity;
     subtotal += lineTotal;
     return { product_id: i.product_id, quantity: i.quantity, unit_price: price, line_total: lineTotal };
   });
 
-  const shippingFee = shipping_method === "express" ? 15.99 : shipping_method === "overnight" ? 29.99 : 5.99;
+  const shippingFee = shipMethod === "express" ? 15.99 : shipMethod === "overnight" ? 29.99 : 5.99;
   const taxAmount = Math.round(subtotal * 0.08 * 100) / 100;
   const orderTotal = Math.round((subtotal + shippingFee + taxAmount) * 100) / 100;
+  const riskScore = computeRiskScoreFeature(subtotal, orderTotal);
+  const billingZip = billingZipIn?.trim() || (customer as { zip_code?: string }).zip_code || "00000";
+  const shippingZip = shippingZipIn?.trim() || billingZip;
+  const promoUsed = Boolean(promoUsedIn);
+  const promoCode = promoUsed && promoCodeIn?.trim() ? promoCodeIn.trim() : null;
+  const deviceType = deviceTypeIn?.trim() || "web";
+  const ipCountry = ipCountryIn?.trim() || "US";
+  const shipDef = shipmentDefaultsFromCheckout(shipMethod);
+  const orderDatetimeIso = new Date().toISOString();
 
-  // Generate a new order_id (max + 1)
   const { data: maxRow } = await supabase
     .from("orders")
     .select("order_id")
     .order("order_id", { ascending: false })
     .limit(1)
-    .single();
+    .maybeSingle();
 
   const newOrderId = (maxRow?.order_id ?? 0) + 1;
 
-  // Insert order
   const { error: orderErr } = await supabase.from("orders").insert({
     order_id: newOrderId,
     customer_id: Number(id),
-    order_datetime: new Date().toISOString(),
+    order_datetime: orderDatetimeIso,
+    billing_zip: billingZip,
+    shipping_zip: shippingZip,
     shipping_state,
     payment_method,
-    device_type: "web",
-    ip_country: "US",
+    device_type: deviceType,
+    ip_country: ipCountry,
+    promo_used: promoUsed,
+    promo_code: promoCode,
     order_subtotal: subtotal,
     shipping_fee: shippingFee,
     tax_amount: taxAmount,
     order_total: orderTotal,
-    risk_score: 0,
-    is_fraud: false,
+    risk_score: riskScore,
+    is_fraud: null,
   });
 
   if (orderErr) {
     return NextResponse.json({ error: orderErr.message }, { status: 500 });
   }
 
-  // Generate order_item_ids
+  const { data: maxShipRow } = await supabase
+    .from("shipments")
+    .select("shipment_id")
+    .order("shipment_id", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const newShipmentId = (maxShipRow?.shipment_id ?? 0) + 1;
+
+  const { error: shipErr } = await supabase.from("shipments").insert({
+    shipment_id: newShipmentId,
+    order_id: newOrderId,
+    ship_datetime: orderDatetimeIso,
+    carrier: shipDef.carrier,
+    shipping_method: shipDef.shipping_method,
+    distance_band: shipDef.distance_band,
+    promised_days: shipDef.promised_days,
+    actual_days: shipDef.actual_days,
+    late_delivery: false,
+  });
+
+  if (shipErr) {
+    return NextResponse.json({ error: shipErr.message }, { status: 500 });
+  }
+
   const { data: maxItemRow } = await supabase
     .from("order_items")
     .select("order_item_id")
     .order("order_item_id", { ascending: false })
     .limit(1)
-    .single();
+    .maybeSingle();
 
   let nextItemId = (maxItemRow?.order_item_id ?? 0) + 1;
 
-  const orderItemsToInsert = lineItems.map((li: any) => ({
+  const orderItemsToInsert = lineItems.map((li) => ({
     order_item_id: nextItemId++,
     order_id: newOrderId,
     product_id: li.product_id,
@@ -320,5 +486,59 @@ export async function POST(
     return NextResponse.json({ error: itemsErr.message }, { status: 500 });
   }
 
-  return NextResponse.json({ order_id: newOrderId, order_total: orderTotal });
+  const c = customer as {
+    gender: string;
+    state: string | null;
+    customer_segment: string | null;
+    loyalty_tier: string | null;
+    birthdate: string;
+    created_at: string;
+  };
+
+  const customerRow: CustomerRow = {
+    gender: c.gender,
+    state: c.state,
+    customer_segment: c.customer_segment,
+    loyalty_tier: c.loyalty_tier,
+    birthdate: c.birthdate,
+    created_at: c.created_at,
+  };
+
+  const fraudPayload = buildFraudPayload({
+    order: {
+      order_subtotal: subtotal,
+      shipping_fee: shippingFee,
+      tax_amount: taxAmount,
+      order_total: orderTotal,
+      risk_score: riskScore,
+      payment_method: String(payment_method),
+      device_type: deviceType,
+      ip_country: ipCountry,
+      promo_used: promoUsed,
+      shipping_state: String(shipping_state),
+    },
+    customer: customerRow,
+    shipment: shipDef,
+    lineItems,
+    orderDatetime: orderDatetimeIso,
+  });
+
+  const fraud = await runFraudForOrder(fraudPayload);
+
+  if (fraud) {
+    const { error: updErr } = await supabase
+      .from("orders")
+      .update({ fraud_probability: fraud.probability })
+      .eq("order_id", newOrderId);
+    if (updErr) {
+      /* column may not exist until migration */
+    }
+  }
+
+  return NextResponse.json({
+    order_id: newOrderId,
+    order_total: orderTotal,
+    fraud_probability: fraud?.probability ?? null,
+    fraud_prediction: fraud?.prediction ?? null,
+  });
 }
