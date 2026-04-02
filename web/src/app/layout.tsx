@@ -20,7 +20,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
           {/* ── Hero banner ── */}
           <div className="hero">
-            <h1>Shop ML Dashboard</h1>
+            <h1>
+              <Link href="/">Shop ML Dashboard</Link>
+            </h1>
             <p>End-to-end machine learning pipeline — fraud detection & late delivery prediction</p>
             <div className="hero-pills">
               <span className="hero-pill">Postgres → Supabase</span>
@@ -38,35 +40,22 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             </div>
           )}
 
-          {/* ── Navigation ── */}
+          {/* ── Navigation (customer: Shop + Fraud ML only) ── */}
           <nav className="nav-wrapper">
-            <Link href="/" className="nav-btn secondary">Home</Link>
-
-            <Link href="/select-customer" className="nav-btn">Select Customer</Link>
-
             <div className="nav-dropdown">
-              <button type="button" className="nav-dropdown-trigger">Customer</button>
+              <button type="button" className="nav-dropdown-trigger">Shop</button>
               <div className="nav-dropdown-menu">
+                <Link href="/select-customer">Select customer</Link>
                 <Link href="/dashboard">Dashboard</Link>
-                <Link href="/place-order">Place Order</Link>
-                <Link href="/orders">Order History</Link>
+                <Link href="/place-order">Checkout</Link>
+                <Link href="/orders">My orders</Link>
               </div>
             </div>
 
             <div className="nav-dropdown">
-              <button type="button" className="nav-dropdown-trigger">Warehouse</button>
+              <button type="button" className="nav-dropdown-trigger">ML tools</button>
               <div className="nav-dropdown-menu">
-                <Link href="/warehouse/priority">Priority Queue</Link>
-                <Link href="/scoring">Run Scoring</Link>
-              </div>
-            </div>
-
-            <div className="nav-dropdown">
-              <button type="button" className="nav-dropdown-trigger">ML Tools</button>
-              <div className="nav-dropdown-menu">
-                <Link href="/fraud">Fraud Prediction</Link>
-                <Link href="/delivery">Delivery Prediction</Link>
-                <Link href="/insights">Model Insights</Link>
+                <Link href="/fraud">Fraud prediction</Link>
               </div>
             </div>
           </nav>
