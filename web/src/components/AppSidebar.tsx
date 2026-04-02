@@ -84,11 +84,6 @@ export function AppSidebar({
             <Link href="/orders">My orders</Link>
             <div className="app-nav-section">ML tools</div>
             <Link href="/fraud">Fraud prediction</Link>
-            <Link href="/delivery">Delivery prediction</Link>
-            <Link href="/insights">Model insights</Link>
-            <div className="app-nav-section">Warehouse</div>
-            <Link href="/warehouse/priority">Priority queue</Link>
-            <Link href="/scoring">Run scoring</Link>
           </>
         ) : (
           <>
