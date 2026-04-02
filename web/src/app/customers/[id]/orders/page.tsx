@@ -12,7 +12,7 @@ interface Order {
   shipping_fee: number;
   tax_amount: number;
   payment_method: string;
-  is_fraud: boolean;
+  is_fraud: boolean | null;
   shipping_method: string | null;
   late_delivery: boolean | null;
   carrier: string | null;
@@ -62,7 +62,15 @@ export default function OrderHistoryPage() {
               Payment: {o.payment_method} | Shipping: {o.shipping_method ?? "N/A"} | Carrier: {o.carrier ?? "N/A"}
             </div>
             <div style={{ fontSize: 13, marginTop: 4 }}>
-              {o.is_fraud && <span style={{ color: "#dc2626", fontWeight: 600, marginRight: 8 }}>Flagged Fraud</span>}
+              {o.is_fraud === null && (
+                <span style={{ color: "#64748b", fontWeight: 600, marginRight: 8 }}>Fraud review pending</span>
+              )}
+              {o.is_fraud === true && (
+                <span style={{ color: "#dc2626", fontWeight: 600, marginRight: 8 }}>Flagged fraud</span>
+              )}
+              {o.is_fraud === false && (
+                <span style={{ color: "#16a34a", fontWeight: 600, marginRight: 8 }}>Not fraud</span>
+              )}
               {o.late_delivery === true && <span style={{ color: "#d97706", fontWeight: 600 }}>Late Delivery</span>}
               {o.late_delivery === false && <span style={{ color: "#16a34a" }}>On Time</span>}
             </div>
