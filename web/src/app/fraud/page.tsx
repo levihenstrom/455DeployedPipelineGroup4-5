@@ -24,6 +24,12 @@ export default function FraudPage() {
   return (
     <div className="card">
       <h2>Fraud Prediction</h2>
+      <p style={{ fontSize: 13, color: "#64748b", marginBottom: 12 }}>
+        <strong>Production:</strong> Fraud scores for real orders come from the database (nightly GitHub
+        Action + <code>score_orders.py</code>). This form calls <code>/api/predict/fraud</code>, which runs{" "}
+        <code>predict.py</code>—works when the server has Python + scikit-learn (typical on your laptop with{" "}
+        <code>PYTHON_BIN</code>); Vercel often cannot run that, so use order history for live scores.
+      </p>
       <form action={onSubmit}>
         <input name="order_total" type="number" step="0.01" placeholder="order_total" defaultValue="120.50" required />
         <input name="order_subtotal" type="number" step="0.01" placeholder="order_subtotal" defaultValue="110.00" required />

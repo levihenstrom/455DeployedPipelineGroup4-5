@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { getSqliteDb } from "@/lib/sqlite";
 
+function sqliteOrdersHasFraudScores(db: ReturnType<typeof getSqliteDb>): boolean {
+  const rows = db.prepare("PRAGMA table_info(orders)").all() as { name: string }[];
+  return rows.some((r) => r.name === "fraud_probability");
+}
+
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -12,12 +17,16 @@ export async function GET(
   if (!supabase) {
     try {
       const db = getSqliteDb();
+      const fraudSql = sqliteOrdersHasFraudScores(db)
+        ? ", o.fraud_probability, o.fraud_predicted, o.fraud_scored_at"
+        : "";
       if (detail) {
         const orders = db
           .prepare(
             `SELECT
                o.order_id, o.order_datetime, o.order_subtotal, o.shipping_fee, o.tax_amount, o.order_total,
-               o.payment_method, o.is_fraud,
+               o.payment_method, o.is_fraud
+               ${fraudSql},
                s.shipping_method, s.carrier, s.late_delivery
              FROM orders o
              LEFT JOIN shipments s ON s.order_id = o.order_id
@@ -37,6 +46,12 @@ export async function GET(
         const result = orders.map((o) => ({
           ...o,
           is_fraud: Boolean(o.is_fraud),
+          fraud_probability: o.fraud_probability != null ? Number(o.fraud_probability) : null,
+          fraud_predicted:
+            o.fraud_predicted === null || o.fraud_predicted === undefined
+              ? null
+              : Boolean(o.fraud_predicted),
+          fraud_scored_at: o.fraud_scored_at ?? null,
           late_delivery: o.late_delivery == null ? null : Boolean(o.late_delivery),
           items: (itemStmt.all(o.order_id) as any[]).map((i) => ({
             product_name: i.product_name ?? "Unknown",
@@ -52,7 +67,9 @@ export async function GET(
       const rows = db
         .prepare(
           `SELECT
-             o.order_id, o.order_datetime, o.order_total, o.is_fraud, s.late_delivery
+             o.order_id, o.order_datetime, o.order_total, o.is_fraud
+             ${fraudSql},
+             s.late_delivery
            FROM orders o
            LEFT JOIN shipments s ON s.order_id = o.order_id
            WHERE o.customer_id = ?
@@ -63,6 +80,12 @@ export async function GET(
       const result = rows.map((o) => ({
         ...o,
         is_fraud: Boolean(o.is_fraud),
+        fraud_probability: o.fraud_probability != null ? Number(o.fraud_probability) : null,
+        fraud_predicted:
+          o.fraud_predicted === null || o.fraud_predicted === undefined
+            ? null
+            : Boolean(o.fraud_predicted),
+        fraud_scored_at: o.fraud_scored_at ?? null,
         late_delivery: o.late_delivery == null ? null : Boolean(o.late_delivery),
       }));
 
@@ -79,6 +102,7 @@ export async function GET(
       .select(`
         order_id, order_datetime, order_subtotal, shipping_fee, tax_amount, order_total,
         payment_method, is_fraud,
+        fraud_probability, fraud_predicted, fraud_scored_at,
         shipments(shipping_method, carrier, late_delivery),
         order_items(quantity, unit_price, line_total, products(product_name))
       `)
@@ -98,6 +122,9 @@ export async function GET(
       order_total: o.order_total,
       payment_method: o.payment_method,
       is_fraud: o.is_fraud,
+      fraud_probability: o.fraud_probability != null ? Number(o.fraud_probability) : null,
+      fraud_predicted: o.fraud_predicted ?? null,
+      fraud_scored_at: o.fraud_scored_at ?? null,
       shipping_method: o.shipments?.shipping_method ?? null,
       carrier: o.shipments?.carrier ?? null,
       late_delivery: o.shipments?.late_delivery ?? null,
@@ -117,6 +144,7 @@ export async function GET(
     .from("orders")
     .select(`
       order_id, order_datetime, order_total, is_fraud,
+      fraud_probability, fraud_predicted, fraud_scored_at,
       shipments(late_delivery)
     `)
     .eq("customer_id", id)
@@ -131,6 +159,9 @@ export async function GET(
     order_datetime: o.order_datetime,
     order_total: o.order_total,
     is_fraud: o.is_fraud,
+    fraud_probability: o.fraud_probability != null ? Number(o.fraud_probability) : null,
+    fraud_predicted: o.fraud_predicted ?? null,
+    fraud_scored_at: o.fraud_scored_at ?? null,
     late_delivery: o.shipments?.late_delivery ?? null,
   }));
 

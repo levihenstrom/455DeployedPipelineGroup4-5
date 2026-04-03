@@ -10,6 +10,9 @@ interface OrderSummary {
   order_total: number;
   is_fraud: boolean;
   late_delivery: boolean | null;
+  /** Model score from nightly GitHub Action / score_orders.py (null until scored) */
+  fraud_probability: number | null;
+  fraud_predicted: boolean | null;
 }
 
 function getCookie(name: string): string | null {
@@ -53,7 +56,9 @@ export default function OrdersPage() {
               <th style={{ padding: 8 }}>Order ID</th>
               <th style={{ padding: 8 }}>Date</th>
               <th style={{ padding: 8 }}>Total</th>
-              <th style={{ padding: 8 }}>Fraud</th>
+              <th style={{ padding: 8 }}>Actual fraud</th>
+              <th style={{ padding: 8 }}>Model P(fraud)</th>
+              <th style={{ padding: 8 }}>Model flag</th>
               <th style={{ padding: 8 }}>Late</th>
               <th style={{ padding: 8 }}></th>
             </tr>
@@ -65,6 +70,12 @@ export default function OrdersPage() {
                 <td style={{ padding: 8 }}>{new Date(o.order_datetime).toLocaleDateString()}</td>
                 <td style={{ padding: 8 }}>${o.order_total.toFixed(2)}</td>
                 <td style={{ padding: 8 }}>{o.is_fraud ? "Yes" : "No"}</td>
+                <td style={{ padding: 8 }}>
+                  {o.fraud_probability == null ? "—" : `${(o.fraud_probability * 100).toFixed(1)}%`}
+                </td>
+                <td style={{ padding: 8 }}>
+                  {o.fraud_predicted == null ? "—" : o.fraud_predicted ? "Risk" : "OK"}
+                </td>
                 <td style={{ padding: 8 }}>{o.late_delivery == null ? "N/A" : o.late_delivery ? "Yes" : "No"}</td>
                 <td style={{ padding: 8 }}>
                   <Link href={`/orders/${o.order_id}`}>Details</Link>

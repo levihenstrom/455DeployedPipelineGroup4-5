@@ -96,22 +96,24 @@ New installs using `sql/schema.sql` already include these columns.
 
 ### 5) GitHub Actions (schedule) + Vercel (app)
 
-- **Nightly scoring** is implemented as `.github/workflows/nightly-fraud-scoring.yml` (6:00 UTC). Add a repository secret `DATABASE_URL` with your Supabase Postgres URI. The workflow needs the trained artifacts under `ml/models/` committed to the repo (or extend the workflow to train before scoring).
-- **Vercel** hosts the Next.js app only; Python batch scoring runs on GitHub Actions (or another worker), not on Vercel serverless by default.
+- **Nightly fraud scoring** is `.github/workflows/nightly-fraud-scoring.yml` (6:00 UTC + manual **Run workflow**). Add repo secret **`DATABASE_URL`** (Supabase Postgres URI). Commit **`ml/models/fraud_model.joblib`**, **`fraud_preprocessor.joblib`**, and **`fraud_inference_config.json`** so the runner can execute `score_orders.py`.
+- **How the web app “connects”:** the UI reads **`orders.fraud_probability`**, **`fraud_predicted`**, **`fraud_scored_at`** via Supabase (`/api/customers/.../orders`). No Python is required on Vercel for that path.
+- **`/api/predict/fraud`** still shells out to **`predict.py`** (fine locally with **`PYTHON_BIN`**; often unavailable on stock Vercel serverless).
 
 ## Web App (Next.js)
 
 The web app includes:
-- dashboard page with quick KPIs
-- fraud prediction form
+- dashboard and **order history** showing **actual `is_fraud`** vs **model fraud score** (after nightly scoring)
+- fraud prediction form (Python inference where supported)
 - late-delivery prediction form
 - model insights from generated metrics
+- **Scoring** page documents GitHub Actions fraud batch + warehouse button
 
 Prediction API routes:
 - `web/src/app/api/predict/fraud/route.ts`
 - `web/src/app/api/predict/delivery/route.ts`
 
-These routes call Python inference scripts (class demo approach).
+These routes call Python inference scripts when the host provides a working `python` + `scikit-learn`.
 
 ## Quick Start (Local)
 

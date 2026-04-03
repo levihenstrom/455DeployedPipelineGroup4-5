@@ -21,6 +21,7 @@ interface OrderSummary {
   order_total: number;
   is_fraud: boolean;
   late_delivery: boolean | null;
+  fraud_probability: number | null;
 }
 
 function getCookie(name: string): string | null {
@@ -105,7 +106,8 @@ export default function DashboardPage() {
               <th style={{ padding: 8 }}>Order ID</th>
               <th style={{ padding: 8 }}>Date</th>
               <th style={{ padding: 8 }}>Total</th>
-              <th style={{ padding: 8 }}>Fraud</th>
+              <th style={{ padding: 8 }}>Actual fraud</th>
+              <th style={{ padding: 8 }}>Model %</th>
               <th style={{ padding: 8 }}>Late</th>
             </tr>
           </thead>
@@ -116,6 +118,9 @@ export default function DashboardPage() {
                 <td style={{ padding: 8 }}>{new Date(o.order_datetime).toLocaleDateString()}</td>
                 <td style={{ padding: 8 }}>${o.order_total.toFixed(2)}</td>
                 <td style={{ padding: 8 }}>{o.is_fraud ? "Yes" : "No"}</td>
+                <td style={{ padding: 8 }}>
+                  {o.fraud_probability == null ? "—" : `${(o.fraud_probability * 100).toFixed(0)}%`}
+                </td>
                 <td style={{ padding: 8 }}>{o.late_delivery == null ? "N/A" : o.late_delivery ? "Yes" : "No"}</td>
               </tr>
             ))}

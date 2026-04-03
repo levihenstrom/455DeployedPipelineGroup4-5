@@ -32,11 +32,19 @@ export default function ScoringPage() {
     <section>
       <h2>Run Scoring</h2>
       <p style={{ fontSize: 14, color: "#475569", marginBottom: 16 }}>
-        Click the button below to trigger the ML inference job. This runs the Python
-        scoring script which generates late-delivery predictions for orders and writes
-        them into the <code>order_predictions</code> table. After scoring completes,
-        visit the <Link href="/warehouse/priority">Warehouse Priority Queue</Link> to
-        see updated results.
+        <strong>Fraud (batch):</strong> Nightly,{" "}
+        <a href="https://docs.github.com/en/actions" target="_blank" rel="noreferrer">
+          GitHub Actions
+        </a>{" "}
+        runs <code>ml/src/score_orders.py</code> using the repo secret <code>DATABASE_URL</code> (Supabase
+        Postgres). It fills <code>orders.fraud_probability</code>, <code>fraud_predicted</code>, and{" "}
+        <code>fraud_scored_at</code>. The customer <Link href="/orders">order history</Link> and dashboard
+        read those columns—no Python on Vercel required.
+      </p>
+      <p style={{ fontSize: 14, color: "#475569", marginBottom: 16 }}>
+        <strong>Late delivery (this button):</strong> Triggers the warehouse scoring API (heuristic /
+        Supabase tables). After it completes, open the{" "}
+        <Link href="/warehouse/priority">Warehouse Priority Queue</Link>.
       </p>
 
       <button onClick={handleRunScoring} disabled={scoring} style={{ marginBottom: 16 }}>

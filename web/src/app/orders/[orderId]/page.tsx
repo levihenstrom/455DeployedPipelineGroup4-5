@@ -13,6 +13,9 @@ interface Order {
   tax_amount: number;
   payment_method: string;
   is_fraud: boolean;
+  fraud_probability: number | null;
+  fraud_predicted: boolean | null;
+  fraud_scored_at: string | null;
   shipping_method: string | null;
   late_delivery: boolean | null;
   carrier: string | null;
@@ -71,6 +74,32 @@ export default function OrderDetailPage() {
           {order.is_fraud && <span style={{ color: "#dc2626", fontWeight: 600, marginRight: 8 }}>Flagged Fraud</span>}
           {order.late_delivery === true && <span style={{ color: "#d97706", fontWeight: 600 }}>Late Delivery</span>}
           {order.late_delivery === false && <span style={{ color: "#16a34a" }}>On Time</span>}
+        </div>
+        <div
+          className="card"
+          style={{ marginTop: 12, padding: 12, background: "#f8fafc", border: "1px solid #e2e8f0" }}
+        >
+          <div style={{ fontWeight: 600, marginBottom: 6 }}>Fraud model (batch / nightly)</div>
+          <div style={{ fontSize: 13 }}>
+            <strong>Actual label (is_fraud):</strong> {order.is_fraud ? "Yes" : "No"}
+          </div>
+          <div style={{ fontSize: 13, marginTop: 4 }}>
+            <strong>Model probability:</strong>{" "}
+            {order.fraud_probability == null ? "Not scored yet" : `${(order.fraud_probability * 100).toFixed(2)}%`}
+          </div>
+          <div style={{ fontSize: 13, marginTop: 4 }}>
+            <strong>Model prediction:</strong>{" "}
+            {order.fraud_predicted == null
+              ? "—"
+              : order.fraud_predicted
+                ? "Fraud risk"
+                : "Not fraud"}
+          </div>
+          {order.fraud_scored_at && (
+            <div style={{ fontSize: 12, marginTop: 4, color: "#64748b" }}>
+              Scored at: {new Date(order.fraud_scored_at).toLocaleString()}
+            </div>
+          )}
         </div>
       </div>
 
