@@ -19,7 +19,7 @@ interface OrderSummary {
   order_id: number;
   order_datetime: string;
   order_total: number;
-  is_fraud: boolean;
+  is_fraud: boolean | null;
   late_delivery: boolean | null;
   fraud_probability: number | null;
 }
@@ -117,7 +117,9 @@ export default function DashboardPage() {
                 <td style={{ padding: 8 }}>{o.order_id}</td>
                 <td style={{ padding: 8 }}>{new Date(o.order_datetime).toLocaleDateString()}</td>
                 <td style={{ padding: 8 }}>${o.order_total.toFixed(2)}</td>
-                <td style={{ padding: 8 }}>{o.is_fraud ? "Yes" : "No"}</td>
+                <td style={{ padding: 8 }}>
+                  {o.is_fraud === null ? "Pending review" : o.is_fraud ? "Yes" : "No"}
+                </td>
                 <td style={{ padding: 8 }}>
                   {o.fraud_probability == null ? "—" : `${(o.fraud_probability * 100).toFixed(0)}%`}
                 </td>

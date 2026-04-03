@@ -5,3 +5,14 @@ node_modules/
 web/.next/
 .next/
 supabase/.temp/
+*.db-shm
+*.db-wal
+**/__pycache__/
+*.pyc
+web/tsconfig.tsbuildinfo
+web/build_log.txt
+web/lint_log.txt
+web/lint_report.json
+
+Chapters.zip
+

@@ -50,6 +50,20 @@ def predict(task: str, payload: dict) -> dict:
     X = preprocessor.transform(df)
     probability = float(model.predict_proba(X)[:, 1][0])
     prediction = int(probability >= threshold)
+
+    try:
+        from monitor import PredictionLogger
+
+        PredictionLogger().log(
+            task=task,
+            order_id=int(payload.get("order_id", -1)),
+            probability=probability,
+            prediction=prediction,
+            features=payload,
+        )
+    except Exception:
+        pass
+
     return {"task": task, "prediction": prediction, "probability": probability}
 
 

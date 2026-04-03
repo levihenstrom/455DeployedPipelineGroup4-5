@@ -42,7 +42,7 @@ create table if not exists orders (
   tax_amount numeric not null,
   order_total numeric not null,
   risk_score numeric not null,
-  is_fraud boolean not null default false,
+  is_fraud boolean,
   fraud_probability numeric,
   fraud_predicted boolean,
   fraud_scored_at timestamptz
@@ -86,3 +86,17 @@ create index if not exists idx_items_product on order_items(product_id);
 create index if not exists idx_shipments_late on shipments(late_delivery);
 create index if not exists idx_reviews_product on product_reviews(product_id);
 create index if not exists idx_reviews_customer on product_reviews(customer_id);
+
+create table if not exists order_predictions (
+  prediction_id bigserial primary key,
+  order_id bigint not null references orders(order_id),
+  prediction_timestamp timestamptz not null default now(),
+  task_name text not null,
+  probability numeric not null,
+  predicted_class int not null,
+  model_threshold numeric not null,
+  features_json jsonb
+);
+
+create index if not exists idx_predictions_order on order_predictions(order_id);
+create index if not exists idx_predictions_timestamp on order_predictions(prediction_timestamp);
