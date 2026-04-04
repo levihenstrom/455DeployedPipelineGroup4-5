@@ -4,24 +4,60 @@ import { useState } from "react";
 
 type PredictionResult = { prediction: number; probability: number };
 
+function isPredictionResult(data: unknown): data is PredictionResult {
+  if (!data || typeof data !== "object") return false;
+  const o = data as Record<string, unknown>;
+  return (
+    typeof o.prediction === "number" &&
+    typeof o.probability === "number" &&
+    Number.isFinite(o.probability)
+  );
+}
+
 export default function FraudPage() {
   const [result, setResult] = useState<PredictionResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
     setResult(null);
+    setError(null);
     const formData = new FormData(e.currentTarget);
     const payload = Object.fromEntries(formData.entries());
-    const res = await fetch("/api/predict/fraud", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const data = (await res.json()) as PredictionResult;
+    let data: unknown;
+    try {
+      const res = await fetch("/api/predict/fraud", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      data = await res.json();
+      if (!res.ok) {
+        const msg =
+          typeof data === "object" && data && "error" in data
+            ? String((data as { error: unknown }).error)
+            : res.statusText;
+        setError(msg || "Prediction failed");
+        return;
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Request failed");
+      return;
+    } finally {
+      setLoading(false);
+    }
+
+    if (!isPredictionResult(data)) {
+      const errMsg =
+        typeof data === "object" && data && "error" in data
+          ? String((data as { error: unknown }).error)
+          : "Invalid response from server";
+      setError(errMsg);
+      return;
+    }
     setResult(data);
-    setLoading(false);
   }
 
   const prob = result ? result.probability * 100 : 0;
@@ -220,6 +256,21 @@ export default function FraudPage() {
             )}
             {loading && (
               <p style={{ color: "#64748b", fontSize: 14 }}>Running model...</p>
+            )}
+            {error && (
+              <div
+                style={{
+                  padding: "14px",
+                  borderRadius: 10,
+                  background: "#fef2f2",
+                  border: "1px solid #fecaca",
+                  color: "#991b1b",
+                  fontSize: 14,
+                  marginBottom: 12,
+                }}
+              >
+                {error}
+              </div>
             )}
             {result && (
               <>

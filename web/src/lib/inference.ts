@@ -13,10 +13,41 @@ function normalizeInput(data: Record<string, unknown>): Record<string, unknown> 
   return out;
 }
 
+/** Match fraud_inference_config.json derived columns when the form omits them. */
+function enrichFraudPayload(data: Record<string, unknown>): Record<string, unknown> {
+  const out = { ...data };
+  const sub = Number(out.order_subtotal);
+  const ship = Number(out.shipping_fee);
+  const tax = Number(out.tax_amount);
+  if (Number.isFinite(sub) && sub > 0) {
+    out.shipping_to_subtotal_ratio = Number.isFinite(ship) ? ship / sub : 0;
+    out.tax_to_subtotal_ratio = Number.isFinite(tax) ? tax / sub : 0;
+  } else {
+    out.shipping_to_subtotal_ratio = 0;
+    out.tax_to_subtotal_ratio = 0;
+  }
+  const actualEmpty = out.actual_days == null || out.actual_days === "";
+  if (actualEmpty) {
+    const pd = Number(out.promised_days);
+    out.actual_days = Number.isFinite(pd) ? pd : 0;
+  }
+  return out;
+}
+
 export function runPrediction(task: "fraud" | "delivery", payload: Record<string, unknown>) {
   const pythonBin = process.env.PYTHON_BIN || "python3";
+  if (process.env.VERCEL === "1" && !(process.env.PYTHON_BIN || "").trim()) {
+    return Promise.reject(
+      new Error(
+        "Python + scikit-learn inference is not available on Vercel. Use Order history for batch-scored fraud probabilities, or run the app locally from the repo with Python and ml/models artifacts.",
+      ),
+    );
+  }
   const scriptPath = join(/* turbopackIgnore: true */ process.cwd(), "..", "ml", "src", "predict.py");
-  const normalized = normalizeInput(payload);
+  let normalized = normalizeInput(payload);
+  if (task === "fraud") {
+    normalized = enrichFraudPayload(normalized);
+  }
 
   return new Promise<Record<string, unknown>>((resolve, reject) => {
     const proc = spawn(pythonBin, [scriptPath, "--task", task, "--json", JSON.stringify(normalized)]);
