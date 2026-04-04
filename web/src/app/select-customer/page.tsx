@@ -32,6 +32,7 @@ export default function SelectCustomerPage() {
   function selectCustomer(c: Customer) {
     document.cookie = `customer_id=${c.customer_id}; path=/; max-age=${60 * 60 * 24 * 30}`;
     document.cookie = `customer_name=${encodeURIComponent(c.full_name)}; path=/; max-age=${60 * 60 * 24 * 30}`;
+    router.refresh();
     router.push("/dashboard");
   }
 
