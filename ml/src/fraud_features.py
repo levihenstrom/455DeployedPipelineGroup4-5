@@ -66,4 +66,7 @@ def build_fraud_dataset(dfs: dict[str, pd.DataFrame]) -> pd.DataFrame:
     for col in [
         "payment_method", "device_type", "ip_country", "customer_segment",
         "loyalty_tier", "gender", "state", "shipping_state",
-        "shipping_method", "dis
+        "shipping_method", "distance_band",
+    ]:
+        fraud_df[col] = fraud_df[col].fillna("UNKNOWN")
+    return fraud_df
