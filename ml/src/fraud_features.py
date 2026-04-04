@@ -41,8 +41,8 @@ def build_fraud_dataset(dfs: dict[str, pd.DataFrame]) -> pd.DataFrame:
     fraud_df["created_at"] = pd.to_datetime(fraud_df["created_at"], errors="coerce")
     fraud_df["birthdate"] = pd.to_datetime(fraud_df["birthdate"], errors="coerce")
 
-    fraud_df["customer_age"] = ((pd.to_datetime(fraud_df["order_datetime"]).dt.tz_localize(None) - pd.to_datetime(fraud_df["birthdate"]).dt.tz_localize(None)).dt.days / 365.25).clip(14, 100)
-    fraud_df["account_age_days"] = (pd.to_datetime(fraud_df["order_datetime"]).dt.tz_localize(None) - pd.to_datetime(fraud_df["created_at"]).dt.tz_localize(None)).dt.days.clip(lower=0)
+    fraud_df["customer_age"] = ((fraud_df["order_datetime"].dt.tz_convert(None) - fraud_df["birthdate"].dt.tz_localize(None)).dt.days / 365.25).clip(14, 100)
+    fraud_df["account_age_days"] = (fraud_df["order_datetime"].dt.tz_convert(None) - fraud_df["created_at"].dt.tz_localize(None)).dt.days.clip(lower=0)
     fraud_df["items_per_order"] = fraud_df["total_items"].fillna(0)
     fraud_df["avg_item_price"] = fraud_df["avg_item_price"].fillna(0)
     fraud_df["shipping_to_subtotal_ratio"] = np.where(
