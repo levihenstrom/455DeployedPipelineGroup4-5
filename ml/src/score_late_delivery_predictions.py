@@ -84,6 +84,19 @@ def main() -> None:
                 )
                 n += 1
         else:
+            # Supabase / Postgres often ship without this table; warehouse UI expects these columns.
+            conn.execute(
+                text(
+                    """
+                    CREATE TABLE IF NOT EXISTS order_predictions (
+                        order_id BIGINT PRIMARY KEY REFERENCES orders (order_id) ON DELETE CASCADE,
+                        late_delivery_probability DOUBLE PRECISION NOT NULL,
+                        predicted_late_delivery INTEGER NOT NULL,
+                        prediction_timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                    )
+                    """
+                )
+            )
             del_stmt = text("DELETE FROM order_predictions WHERE order_id = :oid")
             ins_stmt = text(
                 """
