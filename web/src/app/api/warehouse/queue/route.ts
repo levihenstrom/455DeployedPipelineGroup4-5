@@ -90,37 +90,6 @@ export async function GET() {
     return NextResponse.json(result);
   }
 
-  // Fallback: use shipments table with a synthetic probability based on actual_days/promised_days
-  const { data: fallback, error: fbErr } = await supabase
-    .from("shipments")
-    .select(`
-      order_id, shipping_method, carrier, actual_days, promised_days, late_delivery,
-      orders!inner(order_total, order_datetime, shipping_state,
-        customers(full_name)
-      )
-    `)
-    .order("late_delivery", { ascending: false })
-    .limit(50);
-
-  if (fbErr) {
-    return NextResponse.json({ error: fbErr.message }, { status: 500 });
-  }
-
-  const result = (fallback ?? []).map((row: any) => ({
-    order_id: row.order_id,
-    customer_name: row.orders?.customers?.full_name ?? "Unknown",
-    order_total: row.orders?.order_total ?? 0,
-    order_datetime: row.orders?.order_datetime ?? "",
-    shipping_state: row.orders?.shipping_state ?? "",
-    shipping_method: row.shipping_method,
-    carrier: row.carrier,
-    late_probability: row.promised_days > 0
-      ? Math.min(row.actual_days / row.promised_days, 1)
-      : row.late_delivery ? 1 : 0,
-  }));
-
-  // Sort by late_probability descending
-  result.sort((a: any, b: any) => b.late_probability - a.late_probability);
-
-  return NextResponse.json(result);
+  // No model scores available (avoid misleading fallback that used actual_days / late label).
+  return NextResponse.json([]);
 }

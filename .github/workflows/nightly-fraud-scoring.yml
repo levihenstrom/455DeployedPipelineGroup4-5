@@ -1,7 +1,6 @@
-# Nightly batch fraud scoring → updates orders.fraud_probability / fraud_predicted / fraud_scored_at
+# Nightly batch scoring: fraud on orders + late-delivery → order_predictions
 # Requires repo secret: DATABASE_URL (Supabase Postgres URI)
-# Requires committed ml/models/fraud_model.joblib, fraud_preprocessor.joblib, fraud_inference_config.json
-# (run extract_and_clean.py + train_models.py locally or in CI, then commit artifacts)
+# Requires committed ml/models/*.joblib and inference JSON configs
 
 name: Nightly fraud scoring
 
@@ -25,7 +24,12 @@ jobs:
       - name: Install dependencies
         run: pip install -r ml/requirements.txt
 
-      - name: Score orders
+      - name: Score orders (fraud)
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: python ml/src/score_orders.py
+
+      - name: Score late delivery → order_predictions
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: python ml/src/score_late_delivery_predictions.py

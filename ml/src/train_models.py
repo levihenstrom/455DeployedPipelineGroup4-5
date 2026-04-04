@@ -129,6 +129,11 @@ def evaluate_task(
         cfg = {"threshold": threshold, "feature_columns": feature_columns, "best_model": best_name}
         (MODELS_DIR / "fraud_inference_config.json").write_text(json.dumps(cfg, indent=2))
 
+    if task_name == "delivery":
+        feature_columns = X.columns.tolist()
+        dcfg = {"threshold": 0.5, "feature_columns": feature_columns, "best_model": best_name}
+        (MODELS_DIR / "delivery_inference_config.json").write_text(json.dumps(dcfg, indent=2))
+
     return {
         "task": task_name,
         "target": target_col,

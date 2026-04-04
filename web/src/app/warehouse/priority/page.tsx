@@ -54,7 +54,13 @@ export default function WarehousePriorityPage() {
       {error && <p style={{ color: "red" }}>{error}</p>}
       {loading && <p>Loading queue...</p>}
 
-      {!loading && queue.length === 0 && !error && <p>No scored orders in the queue. Run scoring first.</p>}
+      {!loading && queue.length === 0 && !error && (
+        <p>
+          No model-scored orders in the queue. Run{" "}
+          <code>python ml/src/score_late_delivery_predictions.py</code> with <code>DATABASE_URL</code>, or let the nightly
+          GitHub Action write <code>order_predictions</code> (no shipment-outcome shortcuts).
+        </p>
+      )}
 
       {queue.length > 0 && (
         <div style={{ overflowX: "auto" }}>

@@ -13,6 +13,7 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[2]
 MODELS_DIR = ROOT / "ml" / "models"
 FRAUD_CONFIG = MODELS_DIR / "fraud_inference_config.json"
+DELIVERY_CONFIG = MODELS_DIR / "delivery_inference_config.json"
 
 
 def _coerce_float(value: object, default: float = 0.0) -> float:
@@ -48,6 +49,22 @@ def _fraud_threshold() -> float:
     return float(env) if env else 0.5
 
 
+def _delivery_threshold() -> float:
+    if DELIVERY_CONFIG.exists():
+        return float(json.loads(DELIVERY_CONFIG.read_text()).get("threshold", 0.5))
+    return 0.5
+
+
+def _delivery_feature_frame(payload: dict) -> pd.DataFrame:
+    if not DELIVERY_CONFIG.exists():
+        return pd.DataFrame([payload])
+    cols = json.loads(DELIVERY_CONFIG.read_text()).get("feature_columns")
+    if not cols:
+        return pd.DataFrame([payload])
+    row = {c: payload.get(c) for c in cols}
+    return pd.DataFrame([row])
+
+
 def _fraud_feature_frame(payload: dict) -> pd.DataFrame:
     if not FRAUD_CONFIG.exists():
         return pd.DataFrame([payload])
@@ -74,6 +91,9 @@ def predict(task: str, payload: dict) -> dict:
     if task == "fraud":
         df = _fraud_feature_frame(payload)
         threshold = _fraud_threshold()
+    elif task == "delivery":
+        df = _delivery_feature_frame(payload)
+        threshold = _delivery_threshold()
     else:
         df = pd.DataFrame([payload])
         threshold = 0.5

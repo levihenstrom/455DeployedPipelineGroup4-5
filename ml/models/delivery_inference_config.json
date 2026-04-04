@@ -1,0 +1,25 @@
+{
+  "threshold": 0.5,
+  "feature_columns": [
+    "carrier",
+    "shipping_method",
+    "distance_band",
+    "promised_days",
+    "shipping_state",
+    "state",
+    "order_total",
+    "order_subtotal",
+    "shipping_fee",
+    "tax_amount",
+    "shipping_to_subtotal_ratio",
+    "payment_method",
+    "device_type",
+    "ip_country",
+    "promo_used",
+    "customer_segment",
+    "loyalty_tier",
+    "total_items",
+    "unique_products"
+  ],
+  "best_model": "logistic_regression"
+}

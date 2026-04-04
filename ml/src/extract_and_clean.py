@@ -99,12 +99,8 @@ def build_delivery_dataset(dfs: dict[str, pd.DataFrame]) -> pd.DataFrame:
     )
     delivery_df = delivery_df.merge(order_item_aggs, on="order_id", how="left")
 
-    delivery_df["ship_datetime"] = pd.to_datetime(delivery_df["ship_datetime"], errors="coerce")
     delivery_df["order_datetime"] = pd.to_datetime(delivery_df["order_datetime"], errors="coerce")
-    delivery_df["hours_to_ship"] = (
-        (delivery_df["ship_datetime"] - delivery_df["order_datetime"]).dt.total_seconds() / 3600
-    ).clip(lower=0)
-    delivery_df["actual_minus_promised"] = delivery_df["actual_days"] - delivery_df["promised_days"]
+    # Do not use actual_days, ship timing, or (actual - promised) as features: they leak the late label.
     delivery_df["shipping_to_subtotal_ratio"] = np.where(
         delivery_df["order_subtotal"] > 0,
         delivery_df["shipping_fee"] / delivery_df["order_subtotal"],
@@ -113,7 +109,7 @@ def build_delivery_dataset(dfs: dict[str, pd.DataFrame]) -> pd.DataFrame:
 
     for col in ["carrier", "shipping_method", "distance_band", "shipping_state", "state"]:
         delivery_df[col] = delivery_df[col].fillna("UNKNOWN")
-    for col in ["total_items", "unique_products", "hours_to_ship"]:
+    for col in ["total_items", "unique_products"]:
         delivery_df[col] = delivery_df[col].fillna(0)
 
     delivery_df["promo_used"] = delivery_df["promo_used"].fillna(0).astype(int)
@@ -126,9 +122,6 @@ def build_delivery_dataset(dfs: dict[str, pd.DataFrame]) -> pd.DataFrame:
         "shipping_method",
         "distance_band",
         "promised_days",
-        "actual_days",
-        "actual_minus_promised",
-        "hours_to_ship",
         "shipping_state",
         "state",
         "order_total",

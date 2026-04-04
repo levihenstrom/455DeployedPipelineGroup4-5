@@ -1,5 +1,5 @@
 {
-  "threshold": 0.85,
+  "threshold": 0.8,
   "feature_columns": [
     "order_total",
     "order_subtotal",

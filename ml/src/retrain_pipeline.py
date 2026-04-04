@@ -113,7 +113,11 @@ def evaluate_and_promote(task_name: str, df: pd.DataFrame, target_col: str, id_c
         # we copy instead of move just to be safe, then overwrite with dump
         joblib.dump(best_model, MODELS_DIR / f"{task_name}_model.joblib")
         joblib.dump(preprocessor, MODELS_DIR / f"{task_name}_preprocessor.joblib")
-    
+        if task_name == "delivery":
+            feature_columns = X.columns.tolist()
+            dcfg = {"threshold": 0.5, "feature_columns": feature_columns, "best_model": best_name}
+            (MODELS_DIR / "delivery_inference_config.json").write_text(json.dumps(dcfg, indent=2))
+
     return report, promote
     
 def main():
