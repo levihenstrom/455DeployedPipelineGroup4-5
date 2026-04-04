@@ -1,0 +1,11 @@
+# Used when building ml/Dockerfile with context at repo root
+.git
+.venv
+**/node_modules
+web/.next
+**/__pycache__
+*.pyc
+*.db
+*.db-shm
+*.db-wal
+supabase/.temp
