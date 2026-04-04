@@ -55,6 +55,8 @@ export function enrichFraudPayload(data: Record<string, unknown>): Record<string
     out.shipping_to_subtotal_ratio = 0;
     out.tax_to_subtotal_ratio = 0;
   }
+  // Match predict.py: only default actual_days when omitted. If the user sets actual_days >
+  // promised_days, the model can surface high fraud risk (it was trained with both columns).
   if (out.actual_days == null || out.actual_days === "") {
     const pd = Number(out.promised_days);
     out.actual_days = Number.isFinite(pd) ? pd : 0;

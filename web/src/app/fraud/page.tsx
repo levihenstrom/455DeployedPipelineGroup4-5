@@ -200,6 +200,14 @@ export default function FraudPage() {
                 <label>Promised Days</label>
                 <input name="promised_days" type="number" min="1" defaultValue="3" required />
               </div>
+              <div>
+                <label>Actual Delivery Days (optional)</label>
+                <input name="actual_days" type="number" min="0" placeholder="Same as promised if empty" />
+                <span style={{ display: "block", fontSize: 12, color: "#94a3b8", marginTop: 4 }}>
+                  If blank, we assume on-time delivery (= promised days). Enter a higher number to simulate a
+                  late shipment — the model uses this strongly.
+                </span>
+              </div>
             </div>
           </div>
 
@@ -327,7 +335,7 @@ export default function FraudPage() {
             <h3 style={{ marginTop: 0 }}>About this model</h3>
             <table style={{ fontSize: 13 }}>
               <tbody>
-                <tr><td style={{ color: "#64748b", paddingBottom: 6 }}>Algorithm</td><td style={{ fontWeight: 600 }}>Gradient Boosting</td></tr>
+                <tr><td style={{ color: "#64748b", paddingBottom: 6 }}>Algorithm</td><td style={{ fontWeight: 600 }}>Logistic regression</td></tr>
                 <tr><td style={{ color: "#64748b", paddingBottom: 6 }}>AUC-ROC</td><td style={{ fontWeight: 600 }}>0.964</td></tr>
                 <tr><td style={{ color: "#64748b", paddingBottom: 6 }}>Recall</td><td style={{ fontWeight: 600 }}>77.4%</td></tr>
                 <tr><td style={{ color: "#64748b", paddingBottom: 6 }}>Precision</td><td style={{ fontWeight: 600 }}>71.2%</td></tr>
