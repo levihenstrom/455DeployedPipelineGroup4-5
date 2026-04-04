@@ -72,9 +72,10 @@ export default function FraudPage() {
 
       <p style={{ color: "#64748b", fontSize: 14, marginBottom: 12 }}>
         <strong>Production:</strong> Batch scores on real orders live in Supabase after the nightly GitHub Action runs{" "}
-        <code>score_orders.py</code>. This form calls <code>/api/predict/fraud</code>: locally that runs Python from the
-        repo; on Vercel set <code>ML_INFERENCE_URL</code> to a hosted <code>inference_server</code> (see{" "}
-        <code>ml/src/inference_server.py</code>) or use <strong>Order history</strong> for stored scores.
+        <code>score_orders.py</code>. This form calls <code>/api/predict/fraud</code>: on Vercel it uses the checked-in{" "}
+        <code>web/ml-runtime/fraud_inference_bundle.json</code> (same logistic model as Python; regenerate with{" "}
+        <code>python ml/src/export_fraud_js_bundle.py</code> after retraining). Optionally set <code>ML_INFERENCE_URL</code>{" "}
+        for a remote Python service; locally you can still use <code>predict.py</code> when the bundle is absent.
       </p>
 
       <p style={{ color: "#64748b", fontSize: 14, marginBottom: 24 }}>

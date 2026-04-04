@@ -1,6 +1,8 @@
 import { spawn } from "node:child_process";
 import { join } from "node:path";
 
+import { fraudJsBundleExists, runFraudJsPrediction } from "@/lib/fraudJsInference";
+
 function normalizeInput(data: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(data)) {
@@ -65,10 +67,14 @@ export function runPrediction(task: "fraud" | "delivery", payload: Record<string
     return runPredictionRemote(task, normalized);
   }
 
+  if (task === "fraud" && fraudJsBundleExists()) {
+    return Promise.resolve(runFraudJsPrediction(normalized));
+  }
+
   if (!canUseLocalPython()) {
     return Promise.reject(
       new Error(
-        "Python inference is not available on this deployment. Set ML_INFERENCE_URL to your hosted inference service (see ml/src/inference_server.py), or run the app locally with Python and ml/models. Order history shows batch-scored fraud probabilities from the nightly job.",
+        "Python inference is not available on this deployment. For fraud, add web/ml-runtime/fraud_inference_bundle.json (run ml/src/export_fraud_js_bundle.py) or set ML_INFERENCE_URL. Delivery still needs Python or ML_INFERENCE_URL.",
       ),
     );
   }
